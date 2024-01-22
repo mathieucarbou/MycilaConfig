@@ -1,3 +1,5 @@
+#define MYCILA_LOGGER_CUSTOM_LEVEL
+
 #include <MycilaConfig.h>
 #include <MycilaLogger.h>
 
