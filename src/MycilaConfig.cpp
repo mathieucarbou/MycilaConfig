@@ -46,11 +46,6 @@ String Mycila::ConfigClass::get(const char* key) {
   return _defaults[key];
 }
 
-bool Mycila::ConfigClass::getBool(const char* key) {
-  const String val = get(key);
-  return val == "true" || val == "1" || val == "on" || val == "yes";
-}
-
 bool Mycila::ConfigClass::set(const char* key, const String& value, bool fire) {
   if (std::find(keys.begin(), keys.end(), key) == keys.end()) {
     Logger.warn(TAG, "Set: Unknown key: %s", key);

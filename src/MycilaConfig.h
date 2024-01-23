@@ -52,13 +52,17 @@ namespace Mycila {
       void listen(ConfigRestoredCallback callback) { _restoreCallback = callback; }
 
       String get(const char* key);
-      bool getBool(const char* key);
+
+      inline bool getBool(const char* key) {
+        const String val = get(key);
+        return val == "true" || val == "1" || val == "on" || val == "yes";
+      }
 
       bool set(const char* key, const String& value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, String>& settings, bool fireChangeCallback = true);
-      bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
+      inline bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
-      bool unset(const char* key, bool fireChangeCallback = true) { return set(key, emptyString, fireChangeCallback); }
+      inline bool unset(const char* key, bool fireChangeCallback = true) { return set(key, emptyString, fireChangeCallback); }
 
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;
