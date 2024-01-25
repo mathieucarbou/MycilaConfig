@@ -1,6 +1,6 @@
 # bundle exec jekyll serve --host=0.0.0.0
 
-title: A simple and efficient config library
+title: MycilaConfig
 description: A simple and efficient config library backed by NVM persistence and support caching
 remote_theme: pages-themes/cayman@v0.2.0
 plugins:
