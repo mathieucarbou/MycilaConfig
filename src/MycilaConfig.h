@@ -39,8 +39,8 @@ namespace Mycila {
       // Add a new configuration key with its default value
       void configure(const char* key, const String& defaultValue1 = emptyString);
 
-      // starts the config system
-      void begin();
+      // starts the config system, eventually with an expected number of settings to reserve the correct amount of memory and avoid reallocations
+      void begin(const size_t expectedKeyCount = 0);
 
       // stops the config system
       void end();

@@ -11,9 +11,10 @@
 
 #define TAG "CONFIG"
 
-void Mycila::ConfigClass::begin() {
+void Mycila::ConfigClass::begin(const size_t expectedKeyCount) {
   Logger.info(TAG, "Initializing Config System...");
   _prefs.begin(TAG, false);
+  keys.reserve(expectedKeyCount);
 }
 
 void Mycila::ConfigClass::end() {
@@ -23,6 +24,8 @@ void Mycila::ConfigClass::end() {
 
 void Mycila::ConfigClass::configure(const char* key, const String& defaultValue1) {
   assert(strlen(key) <= 15);
+  if (keys.capacity() == keys.size())
+    Logger.warn(TAG, "Key count is higher than the expectedKeyCount passed to begin(): %u", keys.capacity());
   keys.push_back(key);
   std::sort(keys.begin(), keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
   if (!defaultValue1.isEmpty())
