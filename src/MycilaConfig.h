@@ -9,10 +9,10 @@
 #include <map>
 #include <vector>
 
-#define MYCILA_CONFIG_VERSION "1.2.1"
+#define MYCILA_CONFIG_VERSION "1.2.2"
 #define MYCILA_CONFIG_VERSION_MAJOR 1
 #define MYCILA_CONFIG_VERSION_MINOR 2
-#define MYCILA_CONFIG_VERSION_REVISION 1
+#define MYCILA_CONFIG_VERSION_REVISION 2
 
 // suffix to use for a setting key enabling a feature
 #define MYCILA_CONFIG_KEY_ENABLE_SUFFIX "_enable"
