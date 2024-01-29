@@ -18,20 +18,6 @@
     "espressif32"
   ],
   "headers": "MycilaConfig.h",
-  "dependencies": [
-    {
-      "owner": "bblanchon",
-      "name": "ArduinoJson",
-      "version": "*",
-      "platforms": "espressif32"
-    },
-    {
-      "owner": "mathieucarbou",
-      "name": "MycilaLogger",
-      "version": "*",
-      "platforms": "espressif32"
-    }
-  ],
   "export": {
     "include": [
       "examples",

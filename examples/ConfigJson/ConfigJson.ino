@@ -1,3 +1,4 @@
+#include <ArduinoJson.h>
 #include <MycilaConfig.h>
 
 #define KEY_DEBUG_ENABLE "debug_enable"
@@ -19,6 +20,13 @@ void setup() {
 }
 
 void loop() {
+  JsonDocument doc;
+  Mycila::Config.toJson(doc.to<JsonObject>());
+  serializeJson(doc, Serial);
+  Serial.println();
+
+  Serial.println(Mycila::Config.backup());
+
   assert(getLogLevel() == ARDUHAL_LOG_LEVEL_INFO);
 
   Mycila::Config.setBool(KEY_DEBUG_ENABLE, !Mycila::Config.getBool(KEY_DEBUG_ENABLE));

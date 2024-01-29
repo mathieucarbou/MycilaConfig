@@ -4,10 +4,13 @@
  */
 #pragma once
 
-#include <ArduinoJson.h>
 #include <Preferences.h>
 #include <map>
 #include <vector>
+
+#ifdef MYCILA_CONFIG_JSON_SUPPORT
+#include <ArduinoJson.h>
+#endif
 
 #define MYCILA_CONFIG_VERSION "1.2.2"
 #define MYCILA_CONFIG_VERSION_MAJOR 1
@@ -74,7 +77,9 @@ namespace Mycila {
       // this method can be used to find the right pointer to a supported key given a random buffer
       const char* keyRef(const char* buffer) const;
 
+#ifdef MYCILA_CONFIG_JSON_SUPPORT
       void toJson(const JsonObject& root) const;
+#endif
 
     private:
       Preferences _prefs;
