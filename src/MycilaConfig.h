@@ -39,14 +39,13 @@ namespace Mycila {
       std::vector<const char*> keys;
 
     public:
+      ~ConfigClass();
+
       // Add a new configuration key with its default value
       void configure(const char* key, const String& defaultValue1 = emptyString);
 
       // starts the config system, eventually with an expected number of settings to reserve the correct amount of memory and avoid reallocations
       void begin(const size_t expectedKeyCount = 0);
-
-      // stops the config system
-      void end();
 
       // register a callback to be called when a config value changes
       void listen(ConfigChangeCallback callback) { _changeCallback = callback; }
@@ -73,6 +72,9 @@ namespace Mycila {
       String backup();
       bool restore(const String& data);
       bool restore(const std::map<const char*, String>& settings);
+
+      // clear all saved settings and current cache
+      void clear();
 
       // this method can be used to find the right pointer to a supported key given a random buffer
       const char* keyRef(const char* buffer) const;

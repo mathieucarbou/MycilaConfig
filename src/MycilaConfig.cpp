@@ -10,15 +10,14 @@
 
 #define TAG "CONFIG"
 
+Mycila::ConfigClass::~ConfigClass() {
+  _prefs.end();
+}
+
 void Mycila::ConfigClass::begin(const size_t expectedKeyCount) {
   ESP_LOGI(TAG, "Initializing Config System...");
   _prefs.begin(TAG, false);
   keys.reserve(expectedKeyCount);
-}
-
-void Mycila::ConfigClass::end() {
-  ESP_LOGI(TAG, "Disable Config System...");
-  _prefs.end();
 }
 
 void Mycila::ConfigClass::configure(const char* key, const String& defaultValue1) {
@@ -133,6 +132,11 @@ bool Mycila::ConfigClass::restore(const std::map<const char*, String>& settings)
   } else
     ESP_LOGD(TAG, "No change detected");
   return restored;
+}
+
+void Mycila::ConfigClass::clear() {
+  _prefs.clear();
+  _cache.clear();
 }
 
 bool Mycila::ConfigClass::isPasswordKey(const char* key) const {
