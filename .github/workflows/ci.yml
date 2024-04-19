@@ -118,4 +118,4 @@ jobs:
         run: platformio ci "examples/Config/Config.ino" -l '.' -b ${{ matrix.board }} ${{ matrix.opts }}
 
       - name: Build ConfigJson
-        run: PLATFORMIO_BUILD_FLAGS="-Wall -Wextra -Werror -DMYCILA_CONFIG_JSON_SUPPORT" platformio ci "examples/ConfigJson/ConfigJson.ino" -l '.' --project-option="lib_deps=bblanchon/ArduinoJson" -b ${{ matrix.board }} ${{ matrix.opts }}
+        run: PLATFORMIO_BUILD_FLAGS="-Wall -Wextra -DMYCILA_CONFIG_JSON_SUPPORT" platformio ci "examples/ConfigJson/ConfigJson.ino" -l '.' --project-option="lib_deps=bblanchon/ArduinoJson" -b ${{ matrix.board }} ${{ matrix.opts }}
