@@ -23,7 +23,7 @@ void Mycila::ConfigClass::begin(const size_t expectedKeyCount) {
 void Mycila::ConfigClass::configure(const char* key, const String& defaultValue1) {
   assert(strlen(key) <= 15);
   if (keys.capacity() == keys.size())
-    ESP_LOGW(TAG, "Key count is higher than the expectedKeyCount (%u)", keys.capacity());
+    ESP_LOGW(TAG, "Key count is higher than the expectedKeyCount (%d)", keys.capacity());
   keys.push_back(key);
   std::sort(keys.begin(), keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
   if (!defaultValue1.isEmpty())
