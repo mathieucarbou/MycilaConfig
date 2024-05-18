@@ -33,19 +33,19 @@ namespace Mycila {
   typedef std::function<void(const String& key, const String& oldValue, const String& newValue)> ConfigChangeCallback;
   typedef std::function<void()> ConfigRestoredCallback;
 
-  class ConfigClass {
+  class Config {
     public:
       // List of supported configuration keys
       std::vector<const char*> keys;
 
     public:
-      ~ConfigClass();
+      ~Config();
 
       // Add a new configuration key with its default value
       void configure(const char* key, const String& defaultValue1 = emptyString);
 
       // starts the config system, eventually with an expected number of settings to reserve the correct amount of memory and avoid reallocations
-      void begin(const size_t expectedKeyCount = 0);
+      void begin(const size_t expectedKeyCount = 0, const char* name = "CONFIG");
 
       // register a callback to be called when a config value changes
       void listen(ConfigChangeCallback callback) { _changeCallback = callback; }
@@ -80,7 +80,7 @@ namespace Mycila {
       const char* keyRef(const char* buffer) const;
 
 #ifdef MYCILA_CONFIG_JSON_SUPPORT
-      void toJson(const JsonObject& root) const;
+      void toJson(const JsonObject& root);
 #endif
 
     private:
@@ -90,6 +90,4 @@ namespace Mycila {
       std::map<const char*, String> _defaults;
       std::map<const char*, String> _cache;
   };
-
-  extern ConfigClass Config;
 } // namespace Mycila

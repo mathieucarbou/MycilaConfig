@@ -10,17 +10,17 @@
 
 #define TAG "CONFIG"
 
-Mycila::ConfigClass::~ConfigClass() {
+Mycila::Config::~Config() {
   _prefs.end();
 }
 
-void Mycila::ConfigClass::begin(const size_t expectedKeyCount) {
-  ESP_LOGI(TAG, "Initializing Config System...");
-  _prefs.begin(TAG, false);
+void Mycila::Config::begin(const size_t expectedKeyCount, const char* name) {
+  ESP_LOGI(TAG, "Initializing Config System: %s...", name);
+  _prefs.begin(name, false);
   keys.reserve(expectedKeyCount);
 }
 
-void Mycila::ConfigClass::configure(const char* key, const String& defaultValue1) {
+void Mycila::Config::configure(const char* key, const String& defaultValue1) {
   assert(strlen(key) <= 15);
   if (keys.capacity() == keys.size())
     ESP_LOGW(TAG, "Key count is higher than the expectedKeyCount (%d)", keys.capacity());
@@ -30,7 +30,7 @@ void Mycila::ConfigClass::configure(const char* key, const String& defaultValue1
     _defaults[key] = defaultValue1;
 }
 
-String Mycila::ConfigClass::get(const char* key) {
+String Mycila::Config::get(const char* key) {
   // check if we have a cached value
   auto it = _cache.find(key);
   if (it != _cache.end())
@@ -47,7 +47,7 @@ String Mycila::ConfigClass::get(const char* key) {
   return _defaults[key];
 }
 
-bool Mycila::ConfigClass::set(const char* key, const String& value, bool fire) {
+bool Mycila::Config::set(const char* key, const String& value, bool fire) {
   if (std::find(keys.begin(), keys.end(), key) == keys.end()) {
     ESP_LOGW(TAG, "Set: Unknown key: %s", key);
     return false;
@@ -75,7 +75,7 @@ bool Mycila::ConfigClass::set(const char* key, const String& value, bool fire) {
   }
 }
 
-bool Mycila::ConfigClass::set(const std::map<const char*, String>& settings, bool fire) {
+bool Mycila::Config::set(const std::map<const char*, String>& settings, bool fire) {
   bool updates = false;
   // start restoring settings
   for (auto& key : keys)
@@ -88,7 +88,7 @@ bool Mycila::ConfigClass::set(const std::map<const char*, String>& settings, boo
   return updates;
 }
 
-String Mycila::ConfigClass::backup() {
+String Mycila::Config::backup() {
   String body;
   body.reserve(2048);
   for (auto& key : keys) {
@@ -100,7 +100,7 @@ String Mycila::ConfigClass::backup() {
   return body;
 }
 
-bool Mycila::ConfigClass::restore(const String& data) {
+bool Mycila::Config::restore(const String& data) {
   std::map<const char*, String> settings;
   for (auto& key : keys) {
     int start = data.indexOf(key);
@@ -122,7 +122,7 @@ bool Mycila::ConfigClass::restore(const String& data) {
   return restore(settings);
 }
 
-bool Mycila::ConfigClass::restore(const std::map<const char*, String>& settings) {
+bool Mycila::Config::restore(const std::map<const char*, String>& settings) {
   ESP_LOGD(TAG, "Restoring %d settings...", settings.size());
   bool restored = set(settings, false);
   if (restored) {
@@ -134,26 +134,26 @@ bool Mycila::ConfigClass::restore(const std::map<const char*, String>& settings)
   return restored;
 }
 
-void Mycila::ConfigClass::clear() {
+void Mycila::Config::clear() {
   _prefs.clear();
   _cache.clear();
 }
 
-bool Mycila::ConfigClass::isPasswordKey(const char* key) const {
+bool Mycila::Config::isPasswordKey(const char* key) const {
   uint32_t len = strlen(key);
   if (len < 4)
     return false;
   return strcmp(key + len - 4, MYCILA_CONFIG_KEY_PASSWORD_SUFFIX) == 0;
 }
 
-bool Mycila::ConfigClass::isEnableKey(const char* key) const {
+bool Mycila::Config::isEnableKey(const char* key) const {
   uint32_t len = strlen(key);
   if (len < 7)
     return false;
   return strcmp(key + len - 7, MYCILA_CONFIG_KEY_ENABLE_SUFFIX) == 0;
 }
 
-const char* Mycila::ConfigClass::keyRef(const char* buffer) const {
+const char* Mycila::Config::keyRef(const char* buffer) const {
   for (auto& k : keys)
     if (strcmp(k, buffer) == 0)
       return k;
@@ -161,9 +161,9 @@ const char* Mycila::ConfigClass::keyRef(const char* buffer) const {
 }
 
 #ifdef MYCILA_CONFIG_JSON_SUPPORT
-void Mycila::ConfigClass::toJson(const JsonObject& root) const {
+void Mycila::Config::toJson(const JsonObject& root) {
   for (auto& key : keys) {
-    String value = Mycila::Config.get(key);
+    String value = get(key);
 #ifdef MYCILA_CONFIG_PASSWORD_MASK
     root[key] = value.isEmpty() || !isPasswordKey(key) ? value : MYCILA_CONFIG_PASSWORD_MASK;
 #else
@@ -172,7 +172,3 @@ void Mycila::ConfigClass::toJson(const JsonObject& root) const {
   }
 }
 #endif // MYCILA_CONFIG_JSON_SUPPORT
-
-namespace Mycila {
-  ConfigClass Config;
-} // namespace Mycila
