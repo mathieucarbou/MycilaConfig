@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-#ifdef MYCILA_CONFIG_LOGGER_SUPPORT
+#ifdef MYCILA_LOGGER_SUPPORT
 #include <MycilaLogger.h>
 extern Mycila::Logger logger;
 #define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
@@ -174,7 +174,7 @@ const char* Mycila::Config::keyRef(const char* buffer) const {
   return nullptr;
 }
 
-#ifdef MYCILA_CONFIG_JSON_SUPPORT
+#ifdef MYCILA_JSON_SUPPORT
 void Mycila::Config::toJson(const JsonObject& root) {
   for (auto& key : keys) {
     String value = get(key);
@@ -185,4 +185,4 @@ void Mycila::Config::toJson(const JsonObject& root) {
 #endif // MYCILA_CONFIG_PASSWORD_MASK
   }
 }
-#endif // MYCILA_CONFIG_JSON_SUPPORT
+#endif // MYCILA_JSON_SUPPORT

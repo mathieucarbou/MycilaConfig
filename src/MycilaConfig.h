@@ -8,7 +8,7 @@
 #include <map>
 #include <vector>
 
-#ifdef MYCILA_CONFIG_JSON_SUPPORT
+#ifdef MYCILA_JSON_SUPPORT
 #include <ArduinoJson.h>
 #endif
 
@@ -79,7 +79,7 @@ namespace Mycila {
       // this method can be used to find the right pointer to a supported key given a random buffer
       const char* keyRef(const char* buffer) const;
 
-#ifdef MYCILA_CONFIG_JSON_SUPPORT
+#ifdef MYCILA_JSON_SUPPORT
       void toJson(const JsonObject& root);
 #endif
 

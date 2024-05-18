@@ -75,7 +75,7 @@ jobs:
         run: arduino-cli compile --library . --warnings all -b ${{ matrix.board }} "examples/Config/Config.ino"
 
       - name: Build ConfigJson
-        run: arduino-cli compile --library . --warnings all -b ${{ matrix.board }} "examples/ConfigJson/ConfigJson.ino" --build-property build.extra_flags=-DMYCILA_CONFIG_JSON_SUPPORT
+        run: arduino-cli compile --library . --warnings all -b ${{ matrix.board }} "examples/ConfigJson/ConfigJson.ino" --build-property build.extra_flags=-DMYCILA_JSON_SUPPORT
 
   platformio:
     name: PlatformIO
@@ -137,4 +137,4 @@ jobs:
         run: platformio ci "examples/Config/Config.ino" -l '.' -b ${{ matrix.board }} ${{ matrix.opts }}
 
       - name: Build ConfigJson
-        run: PLATFORMIO_BUILD_FLAGS="-Wall -Wextra -DMYCILA_CONFIG_JSON_SUPPORT" platformio ci "examples/ConfigJson/ConfigJson.ino" -l '.' --project-option="lib_deps=bblanchon/ArduinoJson" -b ${{ matrix.board }} ${{ matrix.opts }}
+        run: PLATFORMIO_BUILD_FLAGS="-Wall -Wextra -DMYCILA_JSON_SUPPORT" platformio ci "examples/ConfigJson/ConfigJson.ino" -l '.' --project-option="lib_deps=bblanchon/ArduinoJson" -b ${{ matrix.board }} ${{ matrix.opts }}
