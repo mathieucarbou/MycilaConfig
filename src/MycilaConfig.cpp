@@ -8,6 +8,20 @@
 
 #include <algorithm>
 
+#ifdef MYCILA_CONFIG_LOGGER_SUPPORT
+#include <MycilaLogger.h>
+extern Mycila::Logger logger;
+#define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
+#define LOGI(tag, format, ...) logger.info(tag, format, ##__VA_ARGS__)
+#define LOGW(tag, format, ...) logger.warn(tag, format, ##__VA_ARGS__)
+#define LOGE(tag, format, ...) logger.error(tag, format, ##__VA_ARGS__)
+#else
+#define LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
+#define LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
+#define LOGW(tag, format, ...) ESP_LOGW(tag, format, ##__VA_ARGS__)
+#define LOGE(tag, format, ...) ESP_LOGE(tag, format, ##__VA_ARGS__)
+#endif
+
 #define TAG "CONFIG"
 
 Mycila::Config::~Config() {
@@ -15,7 +29,7 @@ Mycila::Config::~Config() {
 }
 
 void Mycila::Config::begin(const size_t expectedKeyCount, const char* name) {
-  ESP_LOGI(TAG, "Initializing Config System: %s...", name);
+  LOGI(TAG, "Initializing Config System: %s...", name);
   _prefs.begin(name, false);
   keys.reserve(expectedKeyCount);
 }
@@ -23,7 +37,7 @@ void Mycila::Config::begin(const size_t expectedKeyCount, const char* name) {
 void Mycila::Config::configure(const char* key, const String& defaultValue1) {
   assert(strlen(key) <= 15);
   if (keys.capacity() == keys.size())
-    ESP_LOGW(TAG, "Key count is higher than the expectedKeyCount (%d)", keys.capacity());
+    LOGW(TAG, "Key count is higher than the expectedKeyCount (%d)", keys.capacity());
   keys.push_back(key);
   std::sort(keys.begin(), keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
   if (!defaultValue1.isEmpty())
@@ -49,20 +63,20 @@ String Mycila::Config::get(const char* key) {
 
 bool Mycila::Config::set(const char* key, const String& value, bool fire) {
   if (std::find(keys.begin(), keys.end(), key) == keys.end()) {
-    ESP_LOGW(TAG, "Set: Unknown key: %s", key);
+    LOGW(TAG, "Set: Unknown key: %s", key);
     return false;
   } else {
     const String oldValue = get(key);
     if (oldValue != value) {
       if (value.isEmpty()) {
-        ESP_LOGD(TAG, "Unset %s", key);
+        LOGD(TAG, "Unset %s", key);
         if (_prefs.isKey(key) && _prefs.remove(key)) {
           _cache.erase(key);
           if (fire && _changeCallback)
             _changeCallback(key, oldValue, value);
         }
       } else {
-        ESP_LOGD(TAG, "Set %s=%s", key, value.c_str());
+        LOGD(TAG, "Set %s=%s", key, value.c_str());
         if (_prefs.putString(key, value.c_str())) {
           _cache[key] = value;
           if (fire && _changeCallback)
@@ -123,14 +137,14 @@ bool Mycila::Config::restore(const String& data) {
 }
 
 bool Mycila::Config::restore(const std::map<const char*, String>& settings) {
-  ESP_LOGD(TAG, "Restoring %d settings...", settings.size());
+  LOGD(TAG, "Restoring %d settings...", settings.size());
   bool restored = set(settings, false);
   if (restored) {
-    ESP_LOGD(TAG, "Config restored");
+    LOGD(TAG, "Config restored");
     if (_restoreCallback)
       _restoreCallback();
   } else
-    ESP_LOGD(TAG, "No change detected");
+    LOGD(TAG, "No change detected");
   return restored;
 }
 
