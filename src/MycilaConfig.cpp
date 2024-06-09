@@ -106,10 +106,10 @@ String Mycila::Config::backup() {
   String body;
   body.reserve(2048);
   for (auto& key : keys) {
-    body += key;
-    body += "=";
-    body += get(key);
-    body += "\n";
+    body.concat(key);
+    body.concat("=");
+    body.concat(get(key));
+    body.concat("\n");
   }
   return body;
 }
