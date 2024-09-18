@@ -9,13 +9,13 @@
 #include <vector>
 
 #ifdef MYCILA_JSON_SUPPORT
-#include <ArduinoJson.h>
+  #include <ArduinoJson.h>
 #endif
 
-#define MYCILA_CONFIG_VERSION "3.0.1"
-#define MYCILA_CONFIG_VERSION_MAJOR 3
-#define MYCILA_CONFIG_VERSION_MINOR 0
-#define MYCILA_CONFIG_VERSION_REVISION 1
+#define MYCILA_CONFIG_VERSION          "3.1.0"
+#define MYCILA_CONFIG_VERSION_MAJOR    3
+#define MYCILA_CONFIG_VERSION_MINOR    1
+#define MYCILA_CONFIG_VERSION_REVISION 0
 
 // suffix to use for a setting key enabling a feature
 #define MYCILA_CONFIG_KEY_ENABLE_SUFFIX "_enable"
@@ -24,9 +24,9 @@
 #define MYCILA_CONFIG_KEY_PASSWORD_SUFFIX "_pwd"
 
 #ifndef MYCILA_CONFIG_SHOW_PASSWORD
-#ifndef MYCILA_CONFIG_PASSWORD_MASK
-#define MYCILA_CONFIG_PASSWORD_MASK "********"
-#endif
+  #ifndef MYCILA_CONFIG_PASSWORD_MASK
+    #define MYCILA_CONFIG_PASSWORD_MASK "********"
+  #endif
 #endif
 
 namespace Mycila {
