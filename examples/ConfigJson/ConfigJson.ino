@@ -27,7 +27,10 @@ void loop() {
   serializeJson(doc, Serial);
   Serial.println();
 
-  Serial.println(config.backup());
+  String content;
+  content.reserve(1024);
+  config.backup(content);
+  Serial.println(content);
 
   assert(getLogLevel() == ARDUHAL_LOG_LEVEL_INFO);
 

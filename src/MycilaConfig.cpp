@@ -102,16 +102,13 @@ bool Mycila::Config::set(const std::map<const char*, String>& settings, bool fir
   return updates;
 }
 
-String Mycila::Config::backup() {
-  String body;
-  body.reserve(2048);
+void Mycila::Config::backup(String& content) {
   for (auto& key : keys) {
-    body.concat(key);
-    body.concat("=");
-    body.concat(get(key));
-    body.concat("\n");
+    content.concat(key);
+    content.concat("=");
+    content.concat(get(key));
+    content.concat("\n");
   }
-  return body;
 }
 
 bool Mycila::Config::restore(const String& data) {

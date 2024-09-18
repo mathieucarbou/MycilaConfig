@@ -69,7 +69,7 @@ namespace Mycila {
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;
 
-      String backup();
+      void backup(String& content); // NOLINT
       bool restore(const String& data);
       bool restore(const std::map<const char*, String>& settings);
 
