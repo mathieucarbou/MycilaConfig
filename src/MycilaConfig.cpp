@@ -7,19 +7,20 @@
 #include <assert.h>
 
 #include <algorithm>
+#include <map>
 
 #ifdef MYCILA_LOGGER_SUPPORT
-#include <MycilaLogger.h>
+  #include <MycilaLogger.h>
 extern Mycila::Logger logger;
-#define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
-#define LOGI(tag, format, ...) logger.info(tag, format, ##__VA_ARGS__)
-#define LOGW(tag, format, ...) logger.warn(tag, format, ##__VA_ARGS__)
-#define LOGE(tag, format, ...) logger.error(tag, format, ##__VA_ARGS__)
+  #define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
+  #define LOGI(tag, format, ...) logger.info(tag, format, ##__VA_ARGS__)
+  #define LOGW(tag, format, ...) logger.warn(tag, format, ##__VA_ARGS__)
+  #define LOGE(tag, format, ...) logger.error(tag, format, ##__VA_ARGS__)
 #else
-#define LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
-#define LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
-#define LOGW(tag, format, ...) ESP_LOGW(tag, format, ##__VA_ARGS__)
-#define LOGE(tag, format, ...) ESP_LOGE(tag, format, ##__VA_ARGS__)
+  #define LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
+  #define LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
+  #define LOGW(tag, format, ...) ESP_LOGW(tag, format, ##__VA_ARGS__)
+  #define LOGE(tag, format, ...) ESP_LOGE(tag, format, ##__VA_ARGS__)
 #endif
 
 #define TAG "CONFIG"
@@ -175,11 +176,11 @@ const char* Mycila::Config::keyRef(const char* buffer) const {
 void Mycila::Config::toJson(const JsonObject& root) {
   for (auto& key : keys) {
     String value = get(key);
-#ifdef MYCILA_CONFIG_PASSWORD_MASK
+  #ifdef MYCILA_CONFIG_PASSWORD_MASK
     root[key] = value.isEmpty() || !isPasswordKey(key) ? value : MYCILA_CONFIG_PASSWORD_MASK;
-#else
+  #else
     root[key] = value;
-#endif // MYCILA_CONFIG_PASSWORD_MASK
+  #endif // MYCILA_CONFIG_PASSWORD_MASK
   }
 }
 #endif // MYCILA_JSON_SUPPORT
