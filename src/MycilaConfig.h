@@ -30,22 +30,19 @@
 #endif
 
 namespace Mycila {
-  typedef std::function<void(const String& key, const String& oldValue, const String& newValue)> ConfigChangeCallback;
+  typedef std::function<void(const char* key, const String& newValue)> ConfigChangeCallback;
   typedef std::function<void()> ConfigRestoredCallback;
 
   class Config {
     public:
-      // List of supported configuration keys
-      std::vector<const char*> keys;
-
-    public:
       ~Config();
 
       // Add a new configuration key with its default value
-      void configure(const char* key, const String& defaultValue1 = emptyString);
+      void configure(const char* key, const char* defaultValue = "");
+      void configure(const char* key, const String& defaultValue) { configure(key, defaultValue.c_str()); }
 
-      // starts the config system, eventually with an expected number of settings to reserve the correct amount of memory and avoid reallocations
-      void begin(const size_t expectedKeyCount = 0, const char* name = "CONFIG");
+      // starts the config system
+      void begin(const char* name = "CONFIG");
 
       // register a callback to be called when a config value changes
       void listen(ConfigChangeCallback callback) { _changeCallback = callback; }
@@ -53,28 +50,32 @@ namespace Mycila {
       // register a callback to be called when the configuration is restored
       void listen(ConfigRestoredCallback callback) { _restoreCallback = callback; }
 
-      String get(const char* key);
+      // get the value of a setting key
+      // returns "" if the key is not found, never returns nullptr
+      const char* get(const char* key) const;
+      const char* get(const String& key) const { return get(key.c_str()); }
+      bool getBool(const char* key) const;
+      bool getBool(const String& key) const { return getBool(key.c_str()); }
 
-      inline bool getBool(const char* key) {
-        const String val = get(key);
-        return val == "true" || val == "1" || val == "on" || val == "yes";
-      }
-
-      bool set(const char* key, const String& value, bool fireChangeCallback = true);
+      bool set(const char* key, const char* value, bool fireChangeCallback = true);
+      bool set(const char* key, const String& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
       bool set(const std::map<const char*, String>& settings, bool fireChangeCallback = true);
-      inline bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
+      bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
-      inline bool unset(const char* key, bool fireChangeCallback = true) { return set(key, emptyString, fireChangeCallback); }
+      bool unset(const char* key, bool fireChangeCallback = true) { return set(key, "", fireChangeCallback); }
 
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;
 
-      void backup(String& content); // NOLINT
-      bool restore(const String& data);
+      void backup(Print& out); // NOLINT
+      bool restore(const char* data);
       bool restore(const std::map<const char*, String>& settings);
 
       // clear all saved settings and current cache
       void clear();
+
+      // get list of keys
+      const std::vector<const char*>& keys() const { return _keys; }
 
       // this method can be used to find the right pointer to a supported key given a random buffer
       const char* keyRef(const char* buffer) const;
@@ -84,10 +85,11 @@ namespace Mycila {
 #endif
 
     private:
-      Preferences _prefs;
       ConfigChangeCallback _changeCallback = nullptr;
       ConfigRestoredCallback _restoreCallback = nullptr;
-      std::map<const char*, String> _defaults;
-      std::map<const char*, String> _cache;
+      std::vector<const char*> _keys;
+      mutable Preferences _prefs;
+      mutable std::map<const char*, String> _defaults;
+      mutable std::map<const char*, String> _cache;
   };
 } // namespace Mycila

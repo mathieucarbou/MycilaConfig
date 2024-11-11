@@ -1,5 +1,6 @@
 #include <ArduinoJson.h>
 #include <MycilaConfig.h>
+#include <StreamString.h>
 
 #define KEY_DEBUG_ENABLE "debug_enable"
 #define KEY_WIFI_SSID "wifi_ssid"
@@ -27,7 +28,7 @@ void loop() {
   serializeJson(doc, Serial);
   Serial.println();
 
-  String content;
+  StreamString content;
   content.reserve(1024);
   config.backup(content);
   Serial.println(content);
