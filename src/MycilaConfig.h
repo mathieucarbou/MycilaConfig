@@ -54,8 +54,20 @@ namespace Mycila {
       // returns "" if the key is not found, never returns nullptr
       const char* get(const char* key) const;
       const char* get(const String& key) const { return get(key.c_str()); }
+
       bool getBool(const char* key) const;
       bool getBool(const String& key) const { return getBool(key.c_str()); }
+
+      long getLong(const char* key) const { return atol(get(key)); } // NOLINT
+      long getLong(const String& key) const { return getLong(key.c_str()); } // NOLINT
+
+      int getInt(const char* key) const { return atoi(get(key)); } // NOLINT
+      int getInt(const String& key) const { return getInt(key.c_str()); } // NOLINT
+
+      float getFloat(const char* key) const { return atof(get(key)); }
+      float getFloat(const String& key) const { return getFloat(key.c_str()); }
+
+      bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
 
       bool set(const char* key, const char* value, bool fireChangeCallback = true);
       bool set(const char* key, const String& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
