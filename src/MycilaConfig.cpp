@@ -60,11 +60,11 @@ const char* Mycila::Config::get(const char* key) const {
 
   // real key exists ?
   if (_prefs.isKey(key)) {
-    const String value = _prefs.getString(key).c_str();
+    const std::string value = _prefs.getString(key).c_str();
 
     // key exist and is assigned to a value ?
-    if (!value.isEmpty()) {
-      _cache[key] = value.c_str();
+    if (!value.empty()) {
+      _cache[key] = value;
       LOGD(TAG, "get(%s): Key cached", key);
       return _cache[key].c_str();
     }
