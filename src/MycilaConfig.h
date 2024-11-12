@@ -6,6 +6,7 @@
 
 #include <Preferences.h>
 #include <map>
+#include <string>
 #include <vector>
 
 #ifdef MYCILA_JSON_SUPPORT
@@ -59,7 +60,7 @@ namespace Mycila {
       bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
 
       bool set(const char* key, const char* value, bool fireChangeCallback = true);
-      bool set(const std::map<const char*, String>& settings, bool fireChangeCallback = true);
+      bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
       bool unset(const char* key, bool fireChangeCallback = true) { return set(key, "", fireChangeCallback); }
@@ -69,7 +70,7 @@ namespace Mycila {
 
       void backup(Print& out); // NOLINT
       bool restore(const char* data);
-      bool restore(const std::map<const char*, String>& settings);
+      bool restore(const std::map<const char*, std::string>& settings);
 
       // clear all saved settings and current cache
       void clear();
@@ -89,7 +90,7 @@ namespace Mycila {
       ConfigRestoredCallback _restoreCallback = nullptr;
       std::vector<const char*> _keys;
       mutable Preferences _prefs;
-      mutable std::map<const char*, String> _defaults;
-      mutable std::map<const char*, String> _cache;
+      mutable std::map<const char*, std::string> _defaults;
+      mutable std::map<const char*, std::string> _cache;
   };
 } // namespace Mycila

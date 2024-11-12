@@ -63,7 +63,7 @@ const char* Mycila::Config::get(const char* key) const {
 
     // key exist and is assigned to a value ?
     if (!value.isEmpty()) {
-      _cache[key] = value;
+      _cache[key] = value.c_str();
       LOGD(TAG, "get(%s): Key cached", key);
       return _cache[key].c_str();
     }
@@ -135,7 +135,7 @@ bool Mycila::Config::set(const char* key, const char* value, bool fireChangeCall
   return true;
 }
 
-bool Mycila::Config::set(const std::map<const char*, String>& settings, bool fireChangeCallback) {
+bool Mycila::Config::set(const std::map<const char*, std::string>& settings, bool fireChangeCallback) {
   bool updates = false;
   // start restoring settings
   for (auto& key : _keys)
@@ -158,7 +158,7 @@ void Mycila::Config::backup(Print& out) {
 }
 
 bool Mycila::Config::restore(const char* data) {
-  std::map<const char*, String> settings;
+  std::map<const char*, std::string> settings;
   for (auto& key : _keys) {
     // int start = data.indexOf(key);
     char* start = strstr(data, key);
@@ -174,13 +174,13 @@ bool Mycila::Config::restore(const char* data) {
         LOGW(TAG, "restore(%s): Invalid data!", key);
         return false;
       }
-      settings[key] = String(start, end - start);
+      settings[key] = std::string(start, end - start);
     }
   }
   return restore(settings);
 }
 
-bool Mycila::Config::restore(const std::map<const char*, String>& settings) {
+bool Mycila::Config::restore(const std::map<const char*, std::string>& settings) {
   LOGD(TAG, "Restoring %d settings...", settings.size());
   bool restored = set(settings, false);
   if (restored) {
