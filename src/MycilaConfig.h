@@ -58,6 +58,7 @@ namespace Mycila {
       int getInt(const char* key) const { return atoi(get(key)); } // NOLINT
       float getFloat(const char* key) const { return atof(get(key)); }
       bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
+      bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
       bool set(const char* key, const char* value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
