@@ -24,8 +24,8 @@ void setup() {
 
   // listeners
 
-  config.listen([](const char* key, const String& newValue) {
-    Serial.printf("(listen) '%s' => '%s'\n", key, newValue.c_str());
+  config.listen([](const char* key, const char* newValue) {
+    Serial.printf("(listen) '%s' => '%s'\n", key, newValue);
   });
 
   config.listen([]() {

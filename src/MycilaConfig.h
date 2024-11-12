@@ -6,14 +6,15 @@
 
 #include <Preferences.h>
 #include <map>
+#include <string>
 #include <vector>
 
 #ifdef MYCILA_JSON_SUPPORT
   #include <ArduinoJson.h>
 #endif
 
-#define MYCILA_CONFIG_VERSION          "4.0.0"
-#define MYCILA_CONFIG_VERSION_MAJOR    4
+#define MYCILA_CONFIG_VERSION          "6.0.0"
+#define MYCILA_CONFIG_VERSION_MAJOR    6
 #define MYCILA_CONFIG_VERSION_MINOR    0
 #define MYCILA_CONFIG_VERSION_REVISION 0
 
@@ -30,7 +31,7 @@
 #endif
 
 namespace Mycila {
-  typedef std::function<void(const char* key, const String& newValue)> ConfigChangeCallback;
+  typedef std::function<void(const char* key, const char* newValue)> ConfigChangeCallback;
   typedef std::function<void()> ConfigRestoredCallback;
 
   class Config {
@@ -39,7 +40,6 @@ namespace Mycila {
 
       // Add a new configuration key with its default value
       void configure(const char* key, const char* defaultValue = "");
-      void configure(const char* key, const String& defaultValue) { configure(key, defaultValue.c_str()); }
 
       // starts the config system
       void begin(const char* name = "CONFIG");
@@ -53,25 +53,14 @@ namespace Mycila {
       // get the value of a setting key
       // returns "" if the key is not found, never returns nullptr
       const char* get(const char* key) const;
-      const char* get(const String& key) const { return get(key.c_str()); }
-
       bool getBool(const char* key) const;
-      bool getBool(const String& key) const { return getBool(key.c_str()); }
-
       long getLong(const char* key) const { return atol(get(key)); } // NOLINT
-      long getLong(const String& key) const { return getLong(key.c_str()); } // NOLINT
-
       int getInt(const char* key) const { return atoi(get(key)); } // NOLINT
-      int getInt(const String& key) const { return getInt(key.c_str()); } // NOLINT
-
       float getFloat(const char* key) const { return atof(get(key)); }
-      float getFloat(const String& key) const { return getFloat(key.c_str()); }
-
       bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
 
       bool set(const char* key, const char* value, bool fireChangeCallback = true);
-      bool set(const char* key, const String& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
-      bool set(const std::map<const char*, String>& settings, bool fireChangeCallback = true);
+      bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
       bool unset(const char* key, bool fireChangeCallback = true) { return set(key, "", fireChangeCallback); }
@@ -81,7 +70,7 @@ namespace Mycila {
 
       void backup(Print& out); // NOLINT
       bool restore(const char* data);
-      bool restore(const std::map<const char*, String>& settings);
+      bool restore(const std::map<const char*, std::string>& settings);
 
       // clear all saved settings and current cache
       void clear();
@@ -101,7 +90,7 @@ namespace Mycila {
       ConfigRestoredCallback _restoreCallback = nullptr;
       std::vector<const char*> _keys;
       mutable Preferences _prefs;
-      mutable std::map<const char*, String> _defaults;
-      mutable std::map<const char*, String> _cache;
+      mutable std::map<const char*, std::string> _defaults;
+      mutable std::map<const char*, std::string> _cache;
   };
 } // namespace Mycila
