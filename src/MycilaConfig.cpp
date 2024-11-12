@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include <algorithm>
+#include <string>
 #include <map>
 
 #ifdef MYCILA_LOGGER_SUPPORT
