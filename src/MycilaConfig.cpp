@@ -7,8 +7,8 @@
 #include <assert.h>
 
 #include <algorithm>
-#include <string>
 #include <map>
+#include <string>
 
 #ifdef MYCILA_LOGGER_SUPPORT
   #include <MycilaLogger.h>
@@ -88,7 +88,7 @@ bool Mycila::Config::getBool(const char* key) const {
 }
 
 bool Mycila::Config::set(const char* key, const char* value, bool fireChangeCallback) {
-  const bool del = value == nullptr || strlen(value) == 0;
+  const bool del = value == nullptr || !value[0];
 
   // check if the key is valid
   if (std::find(_keys.begin(), _keys.end(), key) == _keys.end()) {
@@ -224,7 +224,7 @@ void Mycila::Config::toJson(const JsonObject& root) {
   for (auto& key : _keys) {
     const char* value = get(key);
   #ifdef MYCILA_CONFIG_PASSWORD_MASK
-    root[key] = strlen(value) == 0 || !isPasswordKey(key) ? value : MYCILA_CONFIG_PASSWORD_MASK;
+    root[key] = !value[0] || !isPasswordKey(key) ? value : MYCILA_CONFIG_PASSWORD_MASK;
   #else
     root[key] = value;
   #endif // MYCILA_CONFIG_PASSWORD_MASK
