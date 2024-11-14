@@ -40,7 +40,7 @@ namespace Mycila {
 
       // Add a new configuration key with its default value
       void configure(const char* key, const char* defaultValue);
-      void configure(const char* key, const std::string&& defaultValue) { configure(key, defaultValue.c_str()); }
+      void configure(const char* key, const std::string& defaultValue) { configure(key, defaultValue.c_str()); }
       void configure(const char* key, std::string&& defaultValue = std::string());
 
       // starts the config system
