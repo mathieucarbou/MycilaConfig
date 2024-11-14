@@ -34,7 +34,17 @@ Mycila::Config::~Config() {
 void Mycila::Config::begin(const char* name) {
   LOGI(TAG, "Initializing Config System: %s...", name);
   _prefs.begin(name, false);
-  _defaults[""] = std::string();
+}
+
+void Mycila::Config::configure(const char* key, const char* defaultValue) {
+  assert(strlen(key) <= 15);
+  _keys.push_back(key);
+  std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
+  if (defaultValue)
+    _defaults[key] = defaultValue;
+  else
+    _defaults[key] = empty;
+  LOGD(TAG, "Config Key '%s' defaults to '%s'", key, _defaults[key].c_str());
 }
 
 void Mycila::Config::configure(const char* key, std::string&& defaultValue) {
@@ -55,7 +65,7 @@ const std::string& Mycila::Config::get(const char* key) const {
   // not in cache ? is it a real key ?
   if (std::find(_keys.begin(), _keys.end(), key) == _keys.end()) {
     LOGW(TAG, "get(%s): Key unknown", key);
-    return _defaults[""];
+    return empty;
   }
 
   // real key exists ?
@@ -131,7 +141,7 @@ Mycila::Config::Op Mycila::Config::_set(const char* key, const char* value, bool
     _cache.erase(key);
     LOGD(TAG, "unset(%s)", key);
     if (fireChangeCallback && _changeCallback)
-      _changeCallback(key, _defaults[""]);
+      _changeCallback(key, empty);
     return Op::UNSET;
   }
 

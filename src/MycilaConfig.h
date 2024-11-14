@@ -39,7 +39,8 @@ namespace Mycila {
       ~Config();
 
       // Add a new configuration key with its default value
-      void configure(const char* key, const char* defaultValue) { configure(key, std::string(defaultValue)); }
+      void configure(const char* key, const char* defaultValue);
+      void configure(const char* key, const std::string&& defaultValue) { configure(key, defaultValue.c_str()); }
       void configure(const char* key, std::string&& defaultValue = std::string());
 
       // starts the config system
@@ -102,6 +103,7 @@ namespace Mycila {
       mutable Preferences _prefs;
       mutable std::map<const char*, std::string> _defaults;
       mutable std::map<const char*, std::string> _cache;
+      const std::string empty;
 
       Op _set(const char* key, const char* value, bool fireChangeCallback);
   };
