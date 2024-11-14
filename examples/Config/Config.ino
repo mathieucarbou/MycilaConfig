@@ -3,9 +3,9 @@
 Mycila::Config config;
 Preferences prefs;
 
-static void assertEquals(const char* actual, const char* expected) {
-  if (strcmp(actual, expected) != 0) {
-    Serial.printf("Expected '%s' but got '%s'\n", expected, actual);
+static void assertEquals(const std::string& actual, const char* expected) {
+  if (strcmp(actual.c_str(), expected) != 0) {
+    Serial.printf("Expected '%s' but got '%s'\n", expected, actual.c_str());
     assert(false);
   }
 }
@@ -24,8 +24,8 @@ void setup() {
 
   // listeners
 
-  config.listen([](const char* key, const char* newValue) {
-    Serial.printf("(listen) '%s' => '%s'\n", key, newValue);
+  config.listen([](const char* key, const std::string& newValue) {
+    Serial.printf("(listen) '%s' => '%s'\n", key, newValue.c_str());
   });
 
   config.listen([]() {
@@ -43,6 +43,7 @@ void setup() {
   config.configure("key3");
   config.configure("key4", "foo");
   config.configure("key5", "baz");
+  config.configure("key6", std::to_string(6));
 
   // tests
 
@@ -94,8 +95,11 @@ void setup() {
   config.set("key2", "value2");
 
   config.backup(Serial);
-
   config.restore("key1=\nkey2=\nkey3=value3\nkey4=foo\n");
+
+  assertEquals(config.get("key6"), "6");
+  config.set("key6", std::to_string(7));
+  assertEquals(config.get("key6"), "7");
 }
 
 void loop() {

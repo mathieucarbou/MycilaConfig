@@ -31,7 +31,7 @@
 #endif
 
 namespace Mycila {
-  typedef std::function<void(const char* key, const char* newValue)> ConfigChangeCallback;
+  typedef std::function<void(const char* key, const std::string& newValue)> ConfigChangeCallback;
   typedef std::function<void()> ConfigRestoredCallback;
 
   class Config {
@@ -39,7 +39,8 @@ namespace Mycila {
       ~Config();
 
       // Add a new configuration key with its default value
-      void configure(const char* key, const char* defaultValue = "");
+      void configure(const char* key, const char* defaultValue) { configure(key, std::string(defaultValue)); }
+      void configure(const char* key, std::string&& defaultValue = std::string());
 
       // starts the config system
       void begin(const char* name = "CONFIG");
@@ -52,15 +53,19 @@ namespace Mycila {
 
       // get the value of a setting key
       // returns "" if the key is not found, never returns nullptr
-      const char* get(const char* key) const;
+      const std::string& get(const char* key) const;
       bool getBool(const char* key) const;
-      long getLong(const char* key) const { return atol(get(key)); } // NOLINT
-      int getInt(const char* key) const { return atoi(get(key)); } // NOLINT
-      float getFloat(const char* key) const { return atof(get(key)); }
+      long getLong(const char* key) const { return std::stol(get(key)); } // NOLINT
+      int getInt(const char* key) const { return std::stoi(get(key)); }   // NOLINT
+      float getFloat(const char* key) const { return std::stof(get(key)); }
       bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
-      bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
+      bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
+      bool isEqual(const char* key, const char* value) const { return strcmp(get(key).c_str(), value) == 0; }
 
       bool set(const char* key, const char* value, bool fireChangeCallback = true);
+      bool set(const char* key, const std::string& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
+      bool set(const char* key, const std::string&& value, bool fireChangeCallback = true);
+
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
@@ -87,11 +92,17 @@ namespace Mycila {
 #endif
 
     private:
+      enum class Op { NOOP,
+                      GET,
+                      SET,
+                      UNSET };
       ConfigChangeCallback _changeCallback = nullptr;
       ConfigRestoredCallback _restoreCallback = nullptr;
       std::vector<const char*> _keys;
       mutable Preferences _prefs;
       mutable std::map<const char*, std::string> _defaults;
       mutable std::map<const char*, std::string> _cache;
+
+      Op _set(const char* key, const char* value, bool fireChangeCallback);
   };
 } // namespace Mycila

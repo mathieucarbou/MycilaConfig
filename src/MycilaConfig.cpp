@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <utility>
 
 #ifdef MYCILA_LOGGER_SUPPORT
   #include <MycilaLogger.h>
@@ -33,29 +34,28 @@ Mycila::Config::~Config() {
 void Mycila::Config::begin(const char* name) {
   LOGI(TAG, "Initializing Config System: %s...", name);
   _prefs.begin(name, false);
+  _defaults[""] = std::string();
 }
 
-void Mycila::Config::configure(const char* key, const char* defaultValue) {
+void Mycila::Config::configure(const char* key, std::string&& defaultValue) {
   assert(strlen(key) <= 15);
   _keys.push_back(key);
   std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
-  if (!defaultValue)
-    defaultValue = "";
-  _defaults[key] = defaultValue;
-  LOGD(TAG, "Config Key '%s' defaults to '%s'", key, defaultValue);
+  _defaults[key] = std::move(defaultValue);
+  LOGD(TAG, "Config Key '%s' defaults to '%s'", key, _defaults[key].c_str());
 }
 
-const char* Mycila::Config::get(const char* key) const {
+const std::string& Mycila::Config::get(const char* key) const {
   // check if we have a cached value
   auto it = _cache.find(key);
   if (it != _cache.end()) {
-    return it->second.c_str();
+    return it->second;
   }
 
   // not in cache ? is it a real key ?
   if (std::find(_keys.begin(), _keys.end(), key) == _keys.end()) {
     LOGW(TAG, "get(%s): Key unknown", key);
-    return "";
+    return _defaults[""];
   }
 
   // real key exists ?
@@ -66,7 +66,7 @@ const char* Mycila::Config::get(const char* key) const {
     if (!value.empty()) {
       _cache[key] = value;
       LOGD(TAG, "get(%s): Key cached", key);
-      return _cache[key].c_str();
+      return _cache[key];
     }
 
     // key exist but is not assigned to a value => remove it
@@ -76,18 +76,39 @@ const char* Mycila::Config::get(const char* key) const {
 
   // key does not exist, or not assigned to a value
   _cache[key] = _defaults[key];
-  return _cache[key].c_str();
+  return _cache[key];
 }
 
 bool Mycila::Config::getBool(const char* key) const {
-  const char* val = get(key);
-  return strcasecmp(val, "true") == 0 ||
-         strcmp(val, "1") == 0 ||
-         strcmp(val, "on") == 0 ||
-         strcmp(val, "yes") == 0;
+  const std::string& val = get(key);
+  return val == "true" || val == "1" || val == "on" || val == "yes";
 }
 
 bool Mycila::Config::set(const char* key, const char* value, bool fireChangeCallback) {
+  Op op = _set(key, value, fireChangeCallback);
+  if (op == Op::SET) {
+    _cache[key] = value;
+    LOGD(TAG, "set(%s, %s)", key, value);
+    if (fireChangeCallback && _changeCallback)
+      _changeCallback(key, _cache[key]);
+    return true;
+  }
+  return op == Op::UNSET;
+}
+
+bool Mycila::Config::set(const char* key, const std::string&& value, bool fireChangeCallback) {
+  Op op = _set(key, value.c_str(), fireChangeCallback);
+  if (op == Op::SET) {
+    _cache[key] = std::move(value);
+    LOGD(TAG, "set(%s, %s)", key, value.c_str());
+    if (fireChangeCallback && _changeCallback)
+      _changeCallback(key, _cache[key]);
+    return true;
+  }
+  return op == Op::UNSET;
+}
+
+Mycila::Config::Op Mycila::Config::_set(const char* key, const char* value, bool fireChangeCallback) {
   const bool del = value == nullptr || !value[0];
 
   // check if the key is valid
@@ -97,43 +118,39 @@ bool Mycila::Config::set(const char* key, const char* value, bool fireChangeCall
     } else {
       LOGW(TAG, "set(%s, %s): Unknown key!", key, value);
     }
-    return false;
+    return Op::NOOP;
   }
 
   // requested deletion ?
   if (del) {
     // key not there or not removed
     if (!_prefs.isKey(key) || !_prefs.remove(key))
-      return false;
+      return Op::NOOP;
 
-    // key there and removed
+    // key there and to remove
     _cache.erase(key);
     LOGD(TAG, "unset(%s)", key);
     if (fireChangeCallback && _changeCallback)
-      _changeCallback(key, "");
-    return true;
+      _changeCallback(key, _defaults[""]);
+    return Op::UNSET;
   }
 
   const bool keyPersisted = _prefs.isKey(key);
 
   // key there and set to value
   if (keyPersisted && strcmp(value, _prefs.getString(key).c_str()) == 0)
-    return false;
+    return Op::NOOP;
 
   // key not there and set to default value
   if (!keyPersisted && _defaults[key] == value)
-    return false;
+    return Op::NOOP;
 
   // update failed ?
   if (!_prefs.putString(key, value))
-    return false;
+    return Op::NOOP;
 
-  // updated
-  _cache[key] = value;
-  LOGD(TAG, "set(%s, %s)", key, value);
-  if (fireChangeCallback && _changeCallback)
-    _changeCallback(key, _cache[key].c_str());
-  return true;
+  // to update
+  return Op::SET;
 }
 
 bool Mycila::Config::set(const std::map<const char*, std::string>& settings, bool fireChangeCallback) {
@@ -153,7 +170,7 @@ void Mycila::Config::backup(Print& out) {
   for (auto& key : _keys) {
     out.print(key);
     out.print('=');
-    out.print(get(key));
+    out.print(get(key).c_str());
     out.print("\n");
   }
 }
@@ -222,9 +239,9 @@ const char* Mycila::Config::keyRef(const char* buffer) const {
 #ifdef MYCILA_JSON_SUPPORT
 void Mycila::Config::toJson(const JsonObject& root) {
   for (auto& key : _keys) {
-    const char* value = get(key);
+    const std::string& value = get(key);
   #ifdef MYCILA_CONFIG_PASSWORD_MASK
-    root[key] = !value[0] || !isPasswordKey(key) ? value : MYCILA_CONFIG_PASSWORD_MASK;
+    root[key] = value.empty() || !isPasswordKey(key) ? value : MYCILA_CONFIG_PASSWORD_MASK;
   #else
     root[key] = value;
   #endif // MYCILA_CONFIG_PASSWORD_MASK
