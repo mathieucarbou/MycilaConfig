@@ -3,9 +3,9 @@
 Mycila::Config config;
 Preferences prefs;
 
-static void assertEquals(const std::string& actual, const char* expected) {
-  if (strcmp(actual.c_str(), expected) != 0) {
-    Serial.printf("Expected '%s' but got '%s'\n", expected, actual.c_str());
+static void assertEquals(const char* actual, const char* expected) {
+  if (strcmp(actual, expected) != 0) {
+    Serial.printf("Expected '%s' but got '%s'\n", expected, actual);
     assert(false);
   }
 }

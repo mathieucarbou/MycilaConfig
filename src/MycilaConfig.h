@@ -54,14 +54,15 @@ namespace Mycila {
 
       // get the value of a setting key
       // returns "" if the key is not found, never returns nullptr
-      const std::string& get(const char* key) const;
+      const char* get(const char* key) const { return getString(key).c_str(); }
+      const std::string& getString(const char* key) const;
       bool getBool(const char* key) const;
       long getLong(const char* key) const { return std::stol(get(key)); } // NOLINT
       int getInt(const char* key) const { return std::stoi(get(key)); }   // NOLINT
       float getFloat(const char* key) const { return std::stof(get(key)); }
       bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
       bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
-      bool isEqual(const char* key, const char* value) const { return strcmp(get(key).c_str(), value) == 0; }
+      bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
       bool set(const char* key, const char* value, bool fireChangeCallback = true);
       bool set(const char* key, const std::string& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }

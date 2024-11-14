@@ -55,7 +55,7 @@ void Mycila::Config::configure(const char* key, std::string&& defaultValue) {
   LOGD(TAG, "Config Key '%s' defaults to '%s'", key, _defaults[key].c_str());
 }
 
-const std::string& Mycila::Config::get(const char* key) const {
+const std::string& Mycila::Config::getString(const char* key) const {
   // check if we have a cached value
   auto it = _cache.find(key);
   if (it != _cache.end()) {
@@ -180,7 +180,7 @@ void Mycila::Config::backup(Print& out) {
   for (auto& key : _keys) {
     out.print(key);
     out.print('=');
-    out.print(get(key).c_str());
+    out.print(get(key));
     out.print("\n");
   }
 }
