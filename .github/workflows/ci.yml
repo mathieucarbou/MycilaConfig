@@ -100,6 +100,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade platformio
           pip install --upgrade cryptography
+          pip install --upgrade intelhex
       
       - run: PLATFORMIO_SRC_DIR=examples/Config PIO_BOARD=${{ matrix.board }} pio run -e ${{ matrix.env }}
       - run: PLATFORMIO_SRC_DIR=examples/ConfigJson PIO_BOARD=${{ matrix.board }} pio run -e ${{ matrix.env }}
