@@ -5,6 +5,7 @@
 #pragma once
 
 #include <Preferences.h>
+#include <Print.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -39,9 +40,7 @@ namespace Mycila {
       ~Config();
 
       // Add a new configuration key with its default value
-      void configure(const char* key, const char* defaultValue);
-      void configure(const char* key, const std::string& defaultValue) { configure(key, defaultValue.c_str()); }
-      void configure(const char* key, std::string&& defaultValue = std::string());
+      void configure(const char* key, std::string defaultValue = std::string());
 
       // starts the config system
       void begin(const char* name = "CONFIG");
@@ -64,10 +63,7 @@ namespace Mycila {
       bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
-      bool set(const char* key, const char* value, bool fireChangeCallback = true);
-      bool set(const char* key, const std::string& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
-      bool set(const char* key, const std::string&& value, bool fireChangeCallback = true);
-
+      bool set(const char* key, const std::string value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 

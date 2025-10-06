@@ -36,18 +36,7 @@ void Mycila::Config::begin(const char* name) {
   _prefs.begin(name, false);
 }
 
-void Mycila::Config::configure(const char* key, const char* defaultValue) {
-  assert(strlen(key) <= 15);
-  _keys.push_back(key);
-  std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
-  if (defaultValue)
-    _defaults[key] = defaultValue;
-  else
-    _defaults[key] = empty;
-  LOGD(TAG, "Config Key '%s' defaults to '%s'", key, _defaults[key].c_str());
-}
-
-void Mycila::Config::configure(const char* key, std::string&& defaultValue) {
+void Mycila::Config::configure(const char* key, std::string defaultValue) {
   assert(strlen(key) <= 15);
   _keys.push_back(key);
   std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
@@ -94,19 +83,7 @@ bool Mycila::Config::getBool(const char* key) const {
   return val == "true" || val == "1" || val == "on" || val == "yes";
 }
 
-bool Mycila::Config::set(const char* key, const char* value, bool fireChangeCallback) {
-  Op op = _set(key, value, fireChangeCallback);
-  if (op == Op::SET) {
-    _cache[key] = value;
-    LOGD(TAG, "set(%s, %s)", key, value);
-    if (fireChangeCallback && _changeCallback)
-      _changeCallback(key, _cache[key]);
-    return true;
-  }
-  return op == Op::UNSET;
-}
-
-bool Mycila::Config::set(const char* key, const std::string&& value, bool fireChangeCallback) {
+bool Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
   Op op = _set(key, value.c_str(), fireChangeCallback);
   if (op == Op::SET) {
     _cache[key] = std::move(value);
