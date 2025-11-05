@@ -36,7 +36,7 @@ namespace Mycila {
   typedef std::function<void()> ConfigRestoredCallback;
   typedef std::function<bool(const char* key, const std::string& newValue)> ConfigValidatorCallback;
 
-  class ConfigSetResult {
+  class Config {
     public:
       enum class Status {
         NOOP,
@@ -46,22 +46,17 @@ namespace Mycila {
         FAIL_ON_WRITE
       };
 
-      explicit ConfigSetResult(Status status) : _status(status) {}
+      class SetResult {
+        public:
+          explicit SetResult(Status status) : _status(status) {}
+          operator bool() const { return _status == Status::SUCCESS; }
+          // operator to cast to Status
+          operator Status() const { return _status; }
 
-      operator bool() const {
-        return _status == Status::SUCCESS;
-      }
+        private:
+          Status _status;
+      };
 
-      Status getStatus() {
-        return _status;
-      }
-
-    private:
-      Status _status;
-  };
-
-  class Config {
-    public:
       ~Config();
 
       // Add a new configuration key with its default value
@@ -97,7 +92,7 @@ namespace Mycila {
       bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
-      const ConfigSetResult set(const char* key, const std::string& value, bool fireChangeCallback = true);
+      const SetResult set(const char* key, const std::string& value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
