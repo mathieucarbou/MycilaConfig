@@ -97,7 +97,7 @@ namespace Mycila {
       bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
-      const ConfigSetResult set(const char* key, const std::string& value, bool fireChangeCallback = true);
+      const ConfigSetResult set(const char* key, std::string value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 

@@ -113,7 +113,7 @@ bool Mycila::Config::getBool(const char* key) const {
   return val == "true" || val == "1" || val == "on" || val == "yes";
 }
 
-const Mycila::ConfigSetResult Mycila::Config::set(const char* key, const std::string& value, bool fireChangeCallback) {
+const Mycila::ConfigSetResult Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
   // check if the key is valid
   if (!exists(key)) {
     LOGW(TAG, "set(%s, %s): Unknown key!", key, value.c_str());
