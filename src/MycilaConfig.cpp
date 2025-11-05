@@ -11,20 +11,6 @@
 #include <string>
 #include <utility>
 
-#ifdef MYCILA_LOGGER_SUPPORT
-  #include <MycilaLogger.h>
-extern Mycila::Logger logger;
-  #define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
-  #define LOGI(tag, format, ...) logger.info(tag, format, ##__VA_ARGS__)
-  #define LOGW(tag, format, ...) logger.warn(tag, format, ##__VA_ARGS__)
-  #define LOGE(tag, format, ...) logger.error(tag, format, ##__VA_ARGS__)
-#else
-  #define LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
-  #define LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
-  #define LOGW(tag, format, ...) ESP_LOGW(tag, format, ##__VA_ARGS__)
-  #define LOGE(tag, format, ...) ESP_LOGE(tag, format, ##__VA_ARGS__)
-#endif
-
 #define TAG "CONFIG"
 
 Mycila::Config::~Config() {
@@ -32,17 +18,17 @@ Mycila::Config::~Config() {
 }
 
 void Mycila::Config::begin(const char* name) {
-  LOGI(TAG, "Initializing Config System: %s...", name);
+  ESP_LOGI(TAG, "Initializing Config System: %s...", name);
   _prefs.begin(name, false);
 }
 
 bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
   if (callback) {
     _globalValidatorCallback = callback;
-    LOGD(TAG, "setValidator(callback)");
+    ESP_LOGD(TAG, "setValidator(callback)");
   } else {
     _globalValidatorCallback = nullptr;
-    LOGD(TAG, "setValidator(nullptr)");
+    ESP_LOGD(TAG, "setValidator(nullptr)");
   }
   return true;
 }
@@ -50,16 +36,16 @@ bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
 bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callback) {
   // check if the key is valid
   if (!exists(key)) {
-    LOGW(TAG, "setValidator(%s): Unknown key!", key);
+    ESP_LOGW(TAG, "setValidator(%s): Unknown key!", key);
     return false;
   }
 
   if (callback) {
     _validators[key] = callback;
-    LOGD(TAG, "setValidator(%s, callback)", key);
+    ESP_LOGD(TAG, "setValidator(%s, callback)", key);
   } else {
     _validators.erase(key);
-    LOGD(TAG, "setValidator(%s, nullptr)", key);
+    ESP_LOGD(TAG, "setValidator(%s, nullptr)", key);
   }
 
   return true;
@@ -70,7 +56,7 @@ void Mycila::Config::configure(const char* key, std::string defaultValue) {
   _keys.push_back(key);
   std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
   _defaults[key] = std::move(defaultValue);
-  LOGD(TAG, "Config Key '%s' defaults to '%s'", key, _defaults[key].c_str());
+  ESP_LOGD(TAG, "Config Key '%s' defaults to '%s'", key, _defaults[key].c_str());
 }
 
 const std::string& Mycila::Config::getString(const char* key) const {
@@ -82,7 +68,7 @@ const std::string& Mycila::Config::getString(const char* key) const {
 
   // not in cache ? is it a real key ?
   if (!exists(key)) {
-    LOGW(TAG, "get(%s): Key unknown", key);
+    ESP_LOGW(TAG, "get(%s): Key unknown", key);
     return empty;
   }
 
@@ -93,13 +79,13 @@ const std::string& Mycila::Config::getString(const char* key) const {
     // key exist and is assigned to a value ?
     if (!value.empty()) {
       _cache[key] = value;
-      LOGD(TAG, "get(%s): Key cached", key);
+      ESP_LOGD(TAG, "get(%s): Key cached", key);
       return _cache[key];
     }
 
     // key exist but is not assigned to a value => remove it
     _prefs.remove(key);
-    LOGD(TAG, "get(%s): Key cleaned up", key);
+    ESP_LOGD(TAG, "get(%s): Key cleaned up", key);
   }
 
   // key does not exist, or not assigned to a value
@@ -115,7 +101,7 @@ bool Mycila::Config::getBool(const char* key) const {
 const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
   // check if the key is valid
   if (!exists(key)) {
-    LOGW(TAG, "set(%s, %s): UNKNOWN_KEY", key, value.c_str());
+    ESP_LOGW(TAG, "set(%s, %s): UNKNOWN_KEY", key, value.c_str());
     return Mycila::Config::Result::UNKNOWN_KEY;
   }
 
@@ -123,20 +109,20 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
 
   // key there and set to value
   if (keyPersisted && strcmp(value.c_str(), _prefs.getString(key).c_str()) == 0) {
-    LOGD(TAG, "set(%s, %s): ALREADY_PERSISTED", key, value.c_str());
+    ESP_LOGD(TAG, "set(%s, %s): ALREADY_PERSISTED", key, value.c_str());
     return Mycila::Config::Result::ALREADY_PERSISTED;
   }
 
   // key not there and set to default value
   if (!keyPersisted && _defaults[key] == value) {
-    LOGD(TAG, "set(%s, %s): SAME_AS_DEFAULT", key, value.c_str());
+    ESP_LOGD(TAG, "set(%s, %s): SAME_AS_DEFAULT", key, value.c_str());
     return Mycila::Config::Result::SAME_AS_DEFAULT;
   }
 
   // check if we have a global validator
   // and check if the value is valid
   if (_globalValidatorCallback && !_globalValidatorCallback(key, value)) {
-    LOGD(TAG, "set(%s, %s): INVALID_VALUE", key, value.c_str());
+    ESP_LOGD(TAG, "set(%s, %s): INVALID_VALUE", key, value.c_str());
     return Mycila::Config::Result::INVALID_VALUE;
   }
 
@@ -145,7 +131,7 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
   if (it != _validators.end()) {
     // check if the value is valid
     if (!it->second(key, value)) {
-      LOGD(TAG, "set(%s, %s): INVALID_VALUE", key, value.c_str());
+      ESP_LOGD(TAG, "set(%s, %s): INVALID_VALUE", key, value.c_str());
       return Mycila::Config::Result::INVALID_VALUE;
     }
   }
@@ -155,7 +141,7 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
     return Mycila::Config::Result::FAIL_ON_WRITE;
 
   _cache[key] = std::move(value);
-  LOGD(TAG, "set(%s, %s)", key, _cache[key].c_str());
+  ESP_LOGD(TAG, "set(%s, %s)", key, _cache[key].c_str());
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, _cache[key]);
 
@@ -178,7 +164,7 @@ bool Mycila::Config::set(const std::map<const char*, std::string>& settings, boo
 bool Mycila::Config::unset(const char* key, bool fireChangeCallback) {
   // check if the key is valid
   if (!exists(key)) {
-    LOGW(TAG, "unset(%s): Unknown key!", key);
+    ESP_LOGW(TAG, "unset(%s): Unknown key!", key);
     return false;
   }
 
@@ -188,7 +174,7 @@ bool Mycila::Config::unset(const char* key, bool fireChangeCallback) {
 
   // key there and to remove
   _cache.erase(key);
-  LOGD(TAG, "unset(%s)", key);
+  ESP_LOGD(TAG, "unset(%s)", key);
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, empty);
 
@@ -218,7 +204,7 @@ bool Mycila::Config::restore(const char* data) {
       if (!end)
         end = strchr(start, '\n');
       if (!end) {
-        LOGW(TAG, "restore(%s): Invalid data!", key);
+        ESP_LOGW(TAG, "restore(%s): Invalid data!", key);
         return false;
       }
       settings[key] = std::string(start, end - start);
@@ -228,14 +214,14 @@ bool Mycila::Config::restore(const char* data) {
 }
 
 bool Mycila::Config::restore(const std::map<const char*, std::string>& settings) {
-  LOGD(TAG, "Restoring %d settings...", settings.size());
+  ESP_LOGD(TAG, "Restoring %d settings...", settings.size());
   bool restored = set(settings, false);
   if (restored) {
-    LOGD(TAG, "Config restored");
+    ESP_LOGD(TAG, "Config restored");
     if (_restoreCallback)
       _restoreCallback();
   } else
-    LOGD(TAG, "No change detected");
+    ESP_LOGD(TAG, "No change detected");
   return restored;
 }
 
