@@ -46,7 +46,7 @@ namespace Mycila {
         FAIL_ON_WRITE
       };
 
-      ConfigSetResult(Status status) : _status(status) {}
+      explicit ConfigSetResult(Status status) : _status(status) {}
 
       operator bool() const {
         return _status == Status::SUCCESS;
