@@ -126,6 +126,7 @@ namespace Mycila {
     private:
       ConfigChangeCallback _changeCallback = nullptr;
       ConfigRestoredCallback _restoreCallback = nullptr;
+      ConfigValidatorCallback _globalValidatorCallback = nullptr;
       std::vector<const char*> _keys;
       mutable Preferences _prefs;
       mutable std::map<const char*, std::string> _defaults;

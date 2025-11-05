@@ -38,10 +38,10 @@ void Mycila::Config::begin(const char* name) {
 
 bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
   if (callback) {
-    _validators[nullptr] = callback;
+    _globalValidatorCallback = callback;
     LOGD(TAG, "setValidator(callback)");
   } else {
-    _validators.erase(nullptr);
+    _globalValidatorCallback = nullptr;
     LOGD(TAG, "setValidator(nullptr)");
   }
 
@@ -130,13 +130,15 @@ const Mycila::ConfigSetResult Mycila::Config::set(const char* key, const std::st
   if (!keyPersisted && _defaults[key] == value)
     return ConfigSetResult(ConfigSetResult::Status::NOOP);
 
-  // check if we have a validator value
-  auto it = _validators.find(key);
-  if (it == _validators.end()) {
-    // find global validator
-    it = _validators.find(nullptr);
+  // check if we have a global validator
+  // and check if the value is valid
+  if (_globalValidatorCallback && !_globalValidatorCallback(key, value)) {
+    LOGW(TAG, "set(%s, %s): Invalid value!", key, value.c_str());
+    return ConfigSetResult(ConfigSetResult::Status::INVALID_VALUE);
   }
 
+  // check if we have a validator value
+  auto it = _validators.find(key);
   if (it != _validators.end()) {
     // check if the value is valid
     if (!it->second(key, value)) {
@@ -237,7 +239,6 @@ bool Mycila::Config::restore(const std::map<const char*, std::string>& settings)
 void Mycila::Config::clear() {
   _prefs.clear();
   _cache.clear();
-  _validators.clear();
 }
 
 bool Mycila::Config::isPasswordKey(const char* key) const {

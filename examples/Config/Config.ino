@@ -97,7 +97,7 @@ void setup() {
 
   // set validator
   assert(config.setValidator("key4", [](const char* key, const std::string& newValue) {
-    Serial.printf("(key4 validator) '%s' => '%s'\n", key, newValue.c_str());
+    Serial.printf("(validator) '%s' => '%s'\n", key, newValue.c_str());
     return newValue.compare("baz") == 0;
   }));
 
