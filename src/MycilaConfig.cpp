@@ -43,21 +43,13 @@ bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callb
     return false;
   }
 
-  _validators[key] = callback;
-  LOGD(TAG, "setValidator(%s, callback)", key);
-
-  return true;
-}
-
-bool Mycila::Config::unsetValidator(const char* key) {
-  // check if the key is valid
-  if (!exists(key)) {
-    LOGW(TAG, "unsetValidator(%s): Unknown key!", key);
-    return false;
+  if (callback) {
+    _validators[key] = callback;
+    LOGD(TAG, "setValidator(%s, callback)", key);
+  } else {
+    _validators.erase(key);
+    LOGD(TAG, "setValidator(%s, nullptr)", key);
   }
-  
-  _validators.erase(key);
-  LOGD(TAG, "unsetValidator(%s)", key);
 
   return true;
 }
