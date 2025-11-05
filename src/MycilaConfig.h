@@ -34,6 +34,7 @@
 namespace Mycila {
   typedef std::function<void(const char* key, const std::string& newValue)> ConfigChangeCallback;
   typedef std::function<void()> ConfigRestoredCallback;
+  typedef std::function<bool(const std::string& newValue)> ConfigValidatorCallback;
 
   class Config {
     public:
@@ -51,6 +52,15 @@ namespace Mycila {
       // register a callback to be called when the configuration is restored
       void listen(ConfigRestoredCallback callback) { _restoreCallback = callback; }
 
+      // register a callback to be called before a config value changes
+      bool setValidator(const char* key, ConfigValidatorCallback callback);
+
+      // unregister a callback to be called before a config value changes
+      bool unsetValidator(const char* key);
+
+      // returns false if the key is not found
+      bool exists(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
+
       // get the value of a setting key
       // returns "" if the key is not found, never returns nullptr
       const char* get(const char* key) const { return getString(key).c_str(); }
@@ -67,7 +77,7 @@ namespace Mycila {
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
-      bool unset(const char* key, bool fireChangeCallback = true) { return set(key, "", fireChangeCallback); }
+      bool unset(const char* key, bool fireChangeCallback = true);
 
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;
@@ -100,8 +110,9 @@ namespace Mycila {
       mutable Preferences _prefs;
       mutable std::map<const char*, std::string> _defaults;
       mutable std::map<const char*, std::string> _cache;
+      mutable std::map<const char*, ConfigValidatorCallback> _validators;
       const std::string empty;
 
-      Op _set(const char* key, const char* value, bool fireChangeCallback);
+      Op _set(const char* key, const std::string& value, bool fireChangeCallback);
   };
 } // namespace Mycila
