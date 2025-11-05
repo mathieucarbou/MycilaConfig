@@ -52,11 +52,8 @@ namespace Mycila {
       // register a callback to be called when the configuration is restored
       void listen(ConfigRestoredCallback callback) { _restoreCallback = callback; }
 
-      // register a callback to be called before a config value changes
+      // register a callback to be called before a config value changes. You can pass a null callback to remove an existing one
       bool setValidator(const char* key, ConfigValidatorCallback callback);
-
-      // unregister a callback to be called before a config value changes
-      bool unsetValidator(const char* key);
 
       // returns false if the key is not found
       bool exists(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
