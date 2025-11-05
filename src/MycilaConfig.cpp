@@ -101,34 +101,22 @@ bool Mycila::Config::getBool(const char* key) const {
   return val == "true" || val == "1" || val == "on" || val == "yes";
 }
 
-bool Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
-  Op op = _set(key, value, fireChangeCallback);
-  if (op == Op::SET) {
-    _cache[key] = std::move(value);
-    LOGD(TAG, "set(%s, %s)", key, value.c_str());
-    if (fireChangeCallback && _changeCallback)
-      _changeCallback(key, _cache[key]);
-    return true;
-  }
-  return op == Op::UNSET;
-}
-
-Mycila::Config::Op Mycila::Config::_set(const char* key, const std::string& value, bool fireChangeCallback) {
+const Mycila::ConfigSetResult Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
   // check if the key is valid
   if (!exists(key)) {
     LOGW(TAG, "set(%s, %s): Unknown key!", key, value.c_str());
-    return Op::NOOP;
+    return ConfigSetResult(ConfigSetResult::Status::UNKNOWN_KEY);
   }
 
   const bool keyPersisted = _prefs.isKey(key);
 
   // key there and set to value
   if (keyPersisted && strcmp(value.c_str(), _prefs.getString(key).c_str()) == 0)
-    return Op::NOOP;
+    return ConfigSetResult(ConfigSetResult::Status::NOOP);
 
   // key not there and set to default value
   if (!keyPersisted && _defaults[key] == value)
-    return Op::NOOP;
+    return ConfigSetResult(ConfigSetResult::Status::NOOP);
 
   // check if we have a validator value
   auto it = _validators.find(key);
@@ -136,16 +124,20 @@ Mycila::Config::Op Mycila::Config::_set(const char* key, const std::string& valu
     // check if the value is valid
     if (!it->second(value)) {
       LOGW(TAG, "set(%s, %s): Invalid value!", key, value.c_str());
-      return Op::NOOP;
+      return ConfigSetResult(ConfigSetResult::Status::INVALID_VALUE);
     }
   }
 
   // update failed ?
   if (!_prefs.putString(key, value.c_str()))
-    return Op::NOOP;
-
-  // to update
-  return Op::SET;
+    return ConfigSetResult(ConfigSetResult::Status::FAIL_ON_WRITE);
+  
+  _cache[key] = std::move(value);
+  LOGD(TAG, "set(%s, %s)", key, value.c_str());
+  if (fireChangeCallback && _changeCallback)
+    _changeCallback(key, _cache[key]);
+  
+  return ConfigSetResult(ConfigSetResult::Status::SUCCESS);
 }
 
 bool Mycila::Config::set(const std::map<const char*, std::string>& settings, bool fireChangeCallback) {

@@ -36,6 +36,30 @@ namespace Mycila {
   typedef std::function<void()> ConfigRestoredCallback;
   typedef std::function<bool(const std::string& newValue)> ConfigValidatorCallback;
 
+  class ConfigSetResult {
+    public:
+      enum class Status {
+        NOOP,
+        SUCCESS,
+        UNKNOWN_KEY,
+        INVALID_VALUE,
+        FAIL_ON_WRITE
+      };
+    
+      ConfigSetResult(Status status) : _status(status) {}
+
+      operator bool() const {
+        return _status == Status::SUCCESS;
+      }
+
+      Status getStatus() {
+        return _status;
+      }
+
+    private:
+      Status _status;
+  };
+
   class Config {
     public:
       ~Config();
@@ -70,7 +94,7 @@ namespace Mycila {
       bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
-      bool set(const char* key, const std::string value, bool fireChangeCallback = true);
+      const ConfigSetResult set(const char* key, const std::string value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
@@ -97,10 +121,6 @@ namespace Mycila {
 #endif
 
     private:
-      enum class Op { NOOP,
-                      GET,
-                      SET,
-                      UNSET };
       ConfigChangeCallback _changeCallback = nullptr;
       ConfigRestoredCallback _restoreCallback = nullptr;
       std::vector<const char*> _keys;
@@ -109,7 +129,5 @@ namespace Mycila {
       mutable std::map<const char*, std::string> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
       const std::string empty;
-
-      Op _set(const char* key, const std::string& value, bool fireChangeCallback);
   };
 } // namespace Mycila
