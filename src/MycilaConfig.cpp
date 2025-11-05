@@ -44,7 +44,6 @@ bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
     _globalValidatorCallback = nullptr;
     LOGD(TAG, "setValidator(nullptr)");
   }
-
   return true;
 }
 
@@ -113,50 +112,54 @@ bool Mycila::Config::getBool(const char* key) const {
   return val == "true" || val == "1" || val == "on" || val == "yes";
 }
 
-const Mycila::ConfigSetResult Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
+const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
   // check if the key is valid
   if (!exists(key)) {
-    LOGW(TAG, "set(%s, %s): Unknown key!", key, value.c_str());
-    return ConfigSetResult(ConfigSetResult::Status::UNKNOWN_KEY);
+    LOGW(TAG, "set(%s, %s): UNKNOWN_KEY", key, value.c_str());
+    return Mycila::Config::Result::UNKNOWN_KEY;
   }
 
   const bool keyPersisted = _prefs.isKey(key);
 
   // key there and set to value
-  if (keyPersisted && strcmp(value.c_str(), _prefs.getString(key).c_str()) == 0)
-    return ConfigSetResult(ConfigSetResult::Status::NOOP);
+  if (keyPersisted && strcmp(value.c_str(), _prefs.getString(key).c_str()) == 0) {
+    LOGD(TAG, "set(%s, %s): ALREADY_PERSISTED", key, value.c_str());
+    return Mycila::Config::Result::ALREADY_PERSISTED;
+  }
 
   // key not there and set to default value
-  if (!keyPersisted && _defaults[key] == value)
-    return ConfigSetResult(ConfigSetResult::Status::NOOP);
+  if (!keyPersisted && _defaults[key] == value) {
+    LOGD(TAG, "set(%s, %s): SAME_AS_DEFAULT", key, value.c_str());
+    return Mycila::Config::Result::SAME_AS_DEFAULT;
+  }
 
   // check if we have a global validator
   // and check if the value is valid
   if (_globalValidatorCallback && !_globalValidatorCallback(key, value)) {
-    LOGW(TAG, "set(%s, %s): Invalid value!", key, value.c_str());
-    return ConfigSetResult(ConfigSetResult::Status::INVALID_VALUE);
+    LOGD(TAG, "set(%s, %s): INVALID_VALUE", key, value.c_str());
+    return Mycila::Config::Result::INVALID_VALUE;
   }
 
-  // check if we have a validator value
+  // check if we have a specific validator for the key
   auto it = _validators.find(key);
   if (it != _validators.end()) {
     // check if the value is valid
     if (!it->second(key, value)) {
-      LOGW(TAG, "set(%s, %s): Invalid value!", key, value.c_str());
-      return ConfigSetResult(ConfigSetResult::Status::INVALID_VALUE);
+      LOGD(TAG, "set(%s, %s): INVALID_VALUE", key, value.c_str());
+      return Mycila::Config::Result::INVALID_VALUE;
     }
   }
 
   // update failed ?
   if (!_prefs.putString(key, value.c_str()))
-    return ConfigSetResult(ConfigSetResult::Status::FAIL_ON_WRITE);
+    return Mycila::Config::Result::FAIL_ON_WRITE;
 
   _cache[key] = std::move(value);
   LOGD(TAG, "set(%s, %s)", key, _cache[key].c_str());
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, _cache[key]);
 
-  return ConfigSetResult(ConfigSetResult::Status::SUCCESS);
+  return Mycila::Config::Result::PERSISTED;
 }
 
 bool Mycila::Config::set(const std::map<const char*, std::string>& settings, bool fireChangeCallback) {
