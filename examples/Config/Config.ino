@@ -51,6 +51,9 @@ void setup() {
   assertEquals(config.get("key2"), "");
   assertEquals(config.get("key3"), "");
 
+  // check exists key
+  assert(config.exists("key4"));
+
   // set key
   assert(config.set("key1", "true"));
   assertEquals(config.get("key1"), "true");
@@ -82,6 +85,22 @@ void setup() {
   // unset non-existing key => noop
   assert(!config.unset("key4"));
   assertEquals(config.get("key4"), "foo");
+
+  // set validator
+  assert(config.setValidator("key4", [](const std::string& newValue) {
+    return newValue.compare("baz") == 0;
+  }));
+
+  // try set a permitted value
+  assert(config.set("key4", "baz"));
+  assertEquals(config.get("key4"), "baz");
+
+  // try set a NOT permitted value
+  assert(!config.set("key4", "bar"));
+  assertEquals(config.get("key4"), "baz");
+
+  // unset validator
+  assert(config.unsetValidator("key4"));
 
   // set un-stored to default value => no change
   assert(!config.set("key5", "baz"));

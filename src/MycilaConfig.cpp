@@ -36,6 +36,32 @@ void Mycila::Config::begin(const char* name) {
   _prefs.begin(name, false);
 }
 
+bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callback) {
+  // check if the key is valid
+  if (!exists(key)) {
+    LOGW(TAG, "setValidator(%s): Unknown key!", key);
+    return false;
+  }
+
+  _validators[key] = callback;
+  LOGD(TAG, "setValidator(%s, callback)", key);
+
+  return true;
+}
+
+bool Mycila::Config::unsetValidator(const char* key) {
+  // check if the key is valid
+  if (!exists(key)) {
+    LOGW(TAG, "unsetValidator(%s): Unknown key!", key);
+    return false;
+  }
+  
+  _validators.erase(key);
+  LOGD(TAG, "unsetValidator(%s)", key);
+
+  return true;
+}
+
 void Mycila::Config::configure(const char* key, std::string defaultValue) {
   assert(strlen(key) <= 15);
   _keys.push_back(key);
@@ -52,7 +78,7 @@ const std::string& Mycila::Config::getString(const char* key) const {
   }
 
   // not in cache ? is it a real key ?
-  if (std::find(_keys.begin(), _keys.end(), key) == _keys.end()) {
+  if (!exists(key)) {
     LOGW(TAG, "get(%s): Key unknown", key);
     return empty;
   }
@@ -84,7 +110,7 @@ bool Mycila::Config::getBool(const char* key) const {
 }
 
 bool Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
-  Op op = _set(key, value.c_str(), fireChangeCallback);
+  Op op = _set(key, value, fireChangeCallback);
   if (op == Op::SET) {
     _cache[key] = std::move(value);
     LOGD(TAG, "set(%s, %s)", key, value.c_str());
@@ -95,45 +121,35 @@ bool Mycila::Config::set(const char* key, std::string value, bool fireChangeCall
   return op == Op::UNSET;
 }
 
-Mycila::Config::Op Mycila::Config::_set(const char* key, const char* value, bool fireChangeCallback) {
-  const bool del = value == nullptr || !value[0];
-
+Mycila::Config::Op Mycila::Config::_set(const char* key, const std::string& value, bool fireChangeCallback) {
   // check if the key is valid
-  if (std::find(_keys.begin(), _keys.end(), key) == _keys.end()) {
-    if (del) {
-      LOGW(TAG, "unset(%s): Unknown key!", key);
-    } else {
-      LOGW(TAG, "set(%s, %s): Unknown key!", key, value);
-    }
+  if (!exists(key)) {
+    LOGW(TAG, "set(%s, %s): Unknown key!", key, value.c_str());
     return Op::NOOP;
-  }
-
-  // requested deletion ?
-  if (del) {
-    // key not there or not removed
-    if (!_prefs.isKey(key) || !_prefs.remove(key))
-      return Op::NOOP;
-
-    // key there and to remove
-    _cache.erase(key);
-    LOGD(TAG, "unset(%s)", key);
-    if (fireChangeCallback && _changeCallback)
-      _changeCallback(key, empty);
-    return Op::UNSET;
   }
 
   const bool keyPersisted = _prefs.isKey(key);
 
   // key there and set to value
-  if (keyPersisted && strcmp(value, _prefs.getString(key).c_str()) == 0)
+  if (keyPersisted && strcmp(value.c_str(), _prefs.getString(key).c_str()) == 0)
     return Op::NOOP;
 
   // key not there and set to default value
   if (!keyPersisted && _defaults[key] == value)
     return Op::NOOP;
 
+  // check if we have a validator value
+  auto it = _validators.find(key);
+  if (it != _validators.end()) {
+    // check if the value is valid
+    if (!it->second(value)) {
+      LOGW(TAG, "set(%s, %s): Invalid value!", key, value.c_str());
+      return Op::NOOP;
+    }
+  }
+
   // update failed ?
-  if (!_prefs.putString(key, value))
+  if (!_prefs.putString(key, value.c_str()))
     return Op::NOOP;
 
   // to update
@@ -151,6 +167,26 @@ bool Mycila::Config::set(const std::map<const char*, std::string>& settings, boo
     if (isEnableKey(key) && settings.find(key) != settings.end())
       updates |= set(key, settings.at(key).c_str(), fireChangeCallback);
   return updates;
+}
+
+bool Mycila::Config::unset(const char* key, bool fireChangeCallback) {
+  // check if the key is valid
+  if (!exists(key)) {
+    LOGW(TAG, "unset(%s): Unknown key!", key);
+    return false;
+  }
+
+  // key not there or not removed
+  if (!_prefs.isKey(key) || !_prefs.remove(key))
+    return false;
+
+  // key there and to remove
+  _cache.erase(key);
+  LOGD(TAG, "unset(%s)", key);
+  if (fireChangeCallback && _changeCallback)
+    _changeCallback(key, empty);
+
+  return true;
 }
 
 void Mycila::Config::backup(Print& out) {
@@ -200,6 +236,7 @@ bool Mycila::Config::restore(const std::map<const char*, std::string>& settings)
 void Mycila::Config::clear() {
   _prefs.clear();
   _cache.clear();
+  _validators.clear();
 }
 
 bool Mycila::Config::isPasswordKey(const char* key) const {
