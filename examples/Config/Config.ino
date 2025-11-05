@@ -100,7 +100,7 @@ void setup() {
   assertEquals(config.get("key4"), "baz");
 
   // unset validator
-  assert(config.unsetValidator("key4"));
+  assert(config.setValidator("key4", nullptr));
 
   // set un-stored to default value => no change
   assert(!config.set("key5", "baz"));
