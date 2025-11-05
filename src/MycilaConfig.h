@@ -34,7 +34,7 @@
 namespace Mycila {
   typedef std::function<void(const char* key, const std::string& newValue)> ConfigChangeCallback;
   typedef std::function<void()> ConfigRestoredCallback;
-  typedef std::function<bool(const std::string& newValue)> ConfigValidatorCallback;
+  typedef std::function<bool(const char* key, const std::string& newValue)> ConfigValidatorCallback;
 
   class ConfigSetResult {
     public:
@@ -45,7 +45,7 @@ namespace Mycila {
         INVALID_VALUE,
         FAIL_ON_WRITE
       };
-    
+
       ConfigSetResult(Status status) : _status(status) {}
 
       operator bool() const {
@@ -75,6 +75,9 @@ namespace Mycila {
 
       // register a callback to be called when the configuration is restored
       void listen(ConfigRestoredCallback callback) { _restoreCallback = callback; }
+
+      // register a global callback to be called before a config value changes. You can pass a null callback to remove an existing one
+      bool setValidator(ConfigValidatorCallback callback);
 
       // register a callback to be called before a config value changes. You can pass a null callback to remove an existing one
       bool setValidator(const char* key, ConfigValidatorCallback callback);
