@@ -51,18 +51,29 @@ void setup() {
   assertEquals(config.get("key2"), "");
   assertEquals(config.get("key3"), "");
 
+  // check exists key
+  assert(config.exists("key4"));
+
+  // set global validator
+  assert(config.setValidator([](const char* key, const std::string& newValue) {
+    Serial.printf("(global validator) '%s' => '%s'\n", key, newValue.c_str());
+    return true;
+  }));
+
   // set key
   assert(config.set("key1", "true"));
   assertEquals(config.get("key1"), "true");
   assert(prefs.isKey("key1"));
 
   // set key to same value => no change
+  assert(config.set("key1", "true") == Mycila::Config::Result::ALREADY_PERSISTED);
   assert(!config.set("key1", "true"));
 
   // cache stored key
   assertEquals(config.get("key4"), "bar"); // load key and cache
 
   // set key to same value => no change
+  assert(config.set("key4", "bar") == Mycila::Config::Result::ALREADY_PERSISTED);
   assert(!config.set("key4", "bar"));
 
   // set stored key to default value
@@ -74,6 +85,9 @@ void setup() {
   assert(config.set("key4", "bar"));
   assertEquals(config.get("key4"), "bar");
 
+  // unset global validator
+  assert(config.setValidator(nullptr));
+
   // unset stored key
   assert(config.unset("key4"));
   assert(!prefs.isKey("key4"));
@@ -83,7 +97,26 @@ void setup() {
   assert(!config.unset("key4"));
   assertEquals(config.get("key4"), "foo");
 
+  // set validator
+  assert(config.setValidator("key4", [](const char* key, const std::string& newValue) {
+    Serial.printf("(validator) '%s' => '%s'\n", key, newValue.c_str());
+    return newValue.compare("baz") == 0;
+  }));
+
+  // try set a permitted value
+  assert(config.set("key4", "baz"));
+  assertEquals(config.get("key4"), "baz");
+
+  // try set a NOT permitted value
+  assert(config.set("key4", "bar") == Mycila::Config::Result::INVALID_VALUE);
+  assert(!config.set("key4", "bar"));
+  assertEquals(config.get("key4"), "baz");
+
+  // unset validator
+  assert(config.setValidator("key4", nullptr));
+
   // set un-stored to default value => no change
+  assert(config.set("key5", "baz") == Mycila::Config::Result::SAME_AS_DEFAULT);
   assert(!config.set("key5", "baz"));
 
   // unset non stored key => noop

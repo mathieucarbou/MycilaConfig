@@ -34,9 +34,29 @@
 namespace Mycila {
   typedef std::function<void(const char* key, const std::string& newValue)> ConfigChangeCallback;
   typedef std::function<void()> ConfigRestoredCallback;
+  typedef std::function<bool(const char* key, const std::string& newValue)> ConfigValidatorCallback;
 
   class Config {
     public:
+      enum class Result {
+        PERSISTED,
+        UNKNOWN_KEY,
+        ALREADY_PERSISTED,
+        SAME_AS_DEFAULT,
+        INVALID_VALUE,
+        FAIL_ON_WRITE
+      };
+
+      class SetResult {
+        public:
+          constexpr SetResult(Result result) noexcept : _result(result) {} // NOLINT
+          constexpr operator bool() const { return _result == Result::PERSISTED; }
+          constexpr operator Result() const { return _result; }
+
+        private:
+          Result _result;
+      };
+
       ~Config();
 
       // Add a new configuration key with its default value
@@ -51,6 +71,15 @@ namespace Mycila {
       // register a callback to be called when the configuration is restored
       void listen(ConfigRestoredCallback callback) { _restoreCallback = callback; }
 
+      // register a global callback to be called before a config value changes. You can pass a null callback to remove an existing one
+      bool setValidator(ConfigValidatorCallback callback);
+
+      // register a callback to be called before a config value changes. You can pass a null callback to remove an existing one
+      bool setValidator(const char* key, ConfigValidatorCallback callback);
+
+      // returns false if the key is not found
+      bool exists(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
+
       // get the value of a setting key
       // returns "" if the key is not found, never returns nullptr
       const char* get(const char* key) const { return getString(key).c_str(); }
@@ -63,11 +92,11 @@ namespace Mycila {
       bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
-      bool set(const char* key, std::string value, bool fireChangeCallback = true);
+      const SetResult set(const char* key, std::string value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
 
-      bool unset(const char* key, bool fireChangeCallback = true) { return set(key, "", fireChangeCallback); }
+      bool unset(const char* key, bool fireChangeCallback = true);
 
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;
@@ -90,18 +119,14 @@ namespace Mycila {
 #endif
 
     private:
-      enum class Op { NOOP,
-                      GET,
-                      SET,
-                      UNSET };
       ConfigChangeCallback _changeCallback = nullptr;
       ConfigRestoredCallback _restoreCallback = nullptr;
+      ConfigValidatorCallback _globalValidatorCallback = nullptr;
       std::vector<const char*> _keys;
       mutable Preferences _prefs;
       mutable std::map<const char*, std::string> _defaults;
       mutable std::map<const char*, std::string> _cache;
+      mutable std::map<const char*, ConfigValidatorCallback> _validators;
       const std::string empty;
-
-      Op _set(const char* key, const char* value, bool fireChangeCallback);
   };
 } // namespace Mycila
