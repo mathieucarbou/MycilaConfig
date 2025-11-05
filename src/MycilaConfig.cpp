@@ -152,7 +152,7 @@ const Mycila::ConfigSetResult Mycila::Config::set(const char* key, const std::st
     return ConfigSetResult(ConfigSetResult::Status::FAIL_ON_WRITE);
 
   _cache[key] = std::move(value);
-  LOGD(TAG, "set(%s, %s)", key, value.c_str());
+  LOGD(TAG, "set(%s, %s)", key, _cache[key].c_str());
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, _cache[key]);
 
