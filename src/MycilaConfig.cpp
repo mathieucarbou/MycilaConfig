@@ -36,6 +36,18 @@ void Mycila::Config::begin(const char* name) {
   _prefs.begin(name, false);
 }
 
+bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
+  if (callback) {
+    _validators[nullptr] = callback;
+    LOGD(TAG, "setValidator(callback)");
+  } else {
+    _validators.erase(nullptr);
+    LOGD(TAG, "setValidator(nullptr)");
+  }
+
+  return true;
+}
+
 bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callback) {
   // check if the key is valid
   if (!exists(key)) {
@@ -120,9 +132,14 @@ const Mycila::ConfigSetResult Mycila::Config::set(const char* key, const std::st
 
   // check if we have a validator value
   auto it = _validators.find(key);
+  if (it == _validators.end()) {
+    // find global validator
+    it = _validators.find(nullptr);
+  }
+
   if (it != _validators.end()) {
     // check if the value is valid
-    if (!it->second(value)) {
+    if (!it->second(key, value)) {
       LOGW(TAG, "set(%s, %s): Invalid value!", key, value.c_str());
       return ConfigSetResult(ConfigSetResult::Status::INVALID_VALUE);
     }
@@ -131,12 +148,12 @@ const Mycila::ConfigSetResult Mycila::Config::set(const char* key, const std::st
   // update failed ?
   if (!_prefs.putString(key, value.c_str()))
     return ConfigSetResult(ConfigSetResult::Status::FAIL_ON_WRITE);
-  
+
   _cache[key] = std::move(value);
   LOGD(TAG, "set(%s, %s)", key, value.c_str());
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, _cache[key]);
-  
+
   return ConfigSetResult(ConfigSetResult::Status::SUCCESS);
 }
 

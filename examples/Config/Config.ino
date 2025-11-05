@@ -54,6 +54,12 @@ void setup() {
   // check exists key
   assert(config.exists("key4"));
 
+  // set global validator
+  assert(config.setValidator([](const char* key, const std::string& newValue) {
+    Serial.printf("(global validator) '%s' => '%s'\n", key, newValue.c_str());
+    return true;
+  }));
+
   // set key
   assert(config.set("key1", "true"));
   assertEquals(config.get("key1"), "true");
@@ -77,6 +83,9 @@ void setup() {
   assert(config.set("key4", "bar"));
   assertEquals(config.get("key4"), "bar");
 
+  // unset global validator
+  assert(config.setValidator(nullptr));
+
   // unset stored key
   assert(config.unset("key4"));
   assert(!prefs.isKey("key4"));
@@ -87,7 +96,8 @@ void setup() {
   assertEquals(config.get("key4"), "foo");
 
   // set validator
-  assert(config.setValidator("key4", [](const std::string& newValue) {
+  assert(config.setValidator("key4", [](const char* key, const std::string& newValue) {
+    Serial.printf("(key4 validator) '%s' => '%s'\n", key, newValue.c_str());
     return newValue.compare("baz") == 0;
   }));
 
