@@ -155,8 +155,8 @@ void loop() {}
 
 - **`bool getBool(const char* key) const`**  
   Parse value as boolean:
-  - If `MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING` is true: (`MYCILA_CONFIG_VALUE_TRUE`, `"true"`, `"1"`, `"on"`, `"yes"`) → `true`
-  - If `MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING` is false: only `MYCILA_CONFIG_VALUE_TRUE` → `true`
+  - If `-D MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING=1` (or not defined): (`MYCILA_CONFIG_VALUE_TRUE`, `"true"`, `"1"`, `"on"`, `"yes"`) → `true`. **This is the default behavior.**
+  - If `-D MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING=0`: only `MYCILA_CONFIG_VALUE_TRUE` → `true`
 
 - **`int getInt(const char* key) const`**  
   Parse value as integer using `std::stoi()`.
