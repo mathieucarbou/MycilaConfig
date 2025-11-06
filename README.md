@@ -65,7 +65,7 @@ void setup() {
 
   // Declare configuration keys with optional default values
   // Key names must be ≤ 15 characters
-  config.configure("debug_enable", "false");
+  config.configure("debug_enable", MYCILA_CONFIG_VALUE_FALSE);
   config.configure("wifi_ssid");
   config.configure("wifi_pwd");
   config.configure("port", "80");
@@ -119,7 +119,7 @@ void setup() {
   if (config.isEmpty("wifi_pwd")) {
     Serial.println("Password not set");
   }
-  if (config.isEqual("debug_enable", "true")) {
+  if (config.isEqual("debug_enable", MYCILA_CONFIG_VALUE_TRUE)) {
     Serial.println("Debug mode enabled");
   }
 }
@@ -154,7 +154,9 @@ void loop() {}
   Get the value as a `std::string` reference.
 
 - **`bool getBool(const char* key) const`**  
-  Parse value as boolean (`"true"`, `"1"`, `"on"`, `"yes"` → `true`).
+  Parse value as boolean:
+  - If `MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING` is true: (`MYCILA_CONFIG_VALUE_TRUE`, `"true"`, `"1"`, `"on"`, `"yes"`) → `true`
+  - If `MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING` is false: only `MYCILA_CONFIG_VALUE_TRUE` → `true`
 
 - **`int getInt(const char* key) const`**  
   Parse value as integer using `std::stoi()`.
@@ -181,7 +183,8 @@ void loop() {}
   Set multiple values at once. Returns true if any value was changed.
 
 - **`bool setBool(const char* key, bool value)`**  
-  Set a boolean value (stored as `"true"` or `"false"`).
+  Set a boolean value (stored as `MYCILA_CONFIG_VALUE_TRUE` or `MYCILA_CONFIG_VALUE_FALSE`).
+  Eg., `MYCILA_CONFIG_VALUE_TRUE` = "true", `MYCILA_CONFIG_VALUE_FALSE` = "false" (by default).
 
 - **`bool unset(const char* key, bool fireChangeCallback = true)`**  
   Remove the persisted value (revert to default).

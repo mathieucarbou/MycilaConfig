@@ -17,7 +17,7 @@ void setup() {
 
   config.begin();
 
-  config.configure(KEY_DEBUG_ENABLE, "false");
+  config.configure(KEY_DEBUG_ENABLE, MYCILA_CONFIG_VALUE_FALSE);
   config.configure(KEY_WIFI_SSID);
   config.configure(KEY_WIFI_PWD);
 }

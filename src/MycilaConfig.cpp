@@ -95,7 +95,13 @@ const std::string& Mycila::Config::getString(const char* key) const {
 
 bool Mycila::Config::getBool(const char* key) const {
   const std::string& val = get(key);
-  return val == "true" || val == "1" || val == "on" || val == "yes";
+  bool v = val == MYCILA_CONFIG_VALUE_TRUE;
+
+#if MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING
+  v &= val == "true" || val == "1" || val == "on" || val == "yes";
+#endif
+
+  return v;
 }
 
 const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
