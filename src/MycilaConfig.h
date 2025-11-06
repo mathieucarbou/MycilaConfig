@@ -20,15 +20,31 @@
 #define MYCILA_CONFIG_VERSION_REVISION 0
 
 // suffix to use for a setting key enabling a feature
-#define MYCILA_CONFIG_KEY_ENABLE_SUFFIX "_enable"
+#ifndef MYCILA_CONFIG_KEY_ENABLE_SUFFIX
+  #define MYCILA_CONFIG_KEY_ENABLE_SUFFIX "_enable"
+#endif
 
 // suffix to use for a setting key representing a password
-#define MYCILA_CONFIG_KEY_PASSWORD_SUFFIX "_pwd"
+#ifndef MYCILA_CONFIG_KEY_PASSWORD_SUFFIX
+  #define MYCILA_CONFIG_KEY_PASSWORD_SUFFIX "_pwd"
+#endif
 
 #ifndef MYCILA_CONFIG_SHOW_PASSWORD
   #ifndef MYCILA_CONFIG_PASSWORD_MASK
     #define MYCILA_CONFIG_PASSWORD_MASK "********"
   #endif
+#endif
+
+#ifndef MYCILA_CONFIG_VALUE_TRUE
+  #define MYCILA_CONFIG_VALUE_TRUE "true"
+#endif
+
+#ifndef MYCILA_CONFIG_VALUE_FALSE
+  #define MYCILA_CONFIG_VALUE_FALSE "false"
+#endif
+
+#ifndef MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING
+  #define MYCILA_CONFIG_EXTENDED_BOOL_VALUE_PARSING 1
 #endif
 
 namespace Mycila {
@@ -94,7 +110,7 @@ namespace Mycila {
 
       const SetResult set(const char* key, std::string value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
-      bool setBool(const char* key, bool value) { return set(key, value ? "true" : "false"); }
+      bool setBool(const char* key, bool value) { return set(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE); }
 
       bool unset(const char* key, bool fireChangeCallback = true);
 

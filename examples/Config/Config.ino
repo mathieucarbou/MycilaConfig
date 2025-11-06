@@ -38,7 +38,7 @@ void setup() {
 
   // configure()
 
-  config.configure("key1", "false");
+  config.configure("key1", MYCILA_CONFIG_VALUE_FALSE);
   config.configure("key2", "");
   config.configure("key3");
   config.configure("key4", "foo");
@@ -47,7 +47,7 @@ void setup() {
 
   // tests
 
-  assertEquals(config.get("key1"), "false");
+  assertEquals(config.get("key1"), MYCILA_CONFIG_VALUE_FALSE);
   assertEquals(config.get("key2"), "");
   assertEquals(config.get("key3"), "");
 
@@ -61,13 +61,13 @@ void setup() {
   }));
 
   // set key
-  assert(config.set("key1", "true"));
-  assertEquals(config.get("key1"), "true");
+  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE));
+  assertEquals(config.get("key1"), MYCILA_CONFIG_VALUE_TRUE);
   assert(prefs.isKey("key1"));
 
   // set key to same value => no change
-  assert(config.set("key1", "true") == Mycila::Config::Result::ALREADY_PERSISTED);
-  assert(!config.set("key1", "true"));
+  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Result::ALREADY_PERSISTED);
+  assert(!config.set("key1", MYCILA_CONFIG_VALUE_TRUE));
 
   // cache stored key
   assertEquals(config.get("key4"), "bar"); // load key and cache
