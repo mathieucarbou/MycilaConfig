@@ -52,7 +52,9 @@ bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callb
 }
 
 void Mycila::Config::configure(const char* key, std::string defaultValue) {
+#ifndef MYCILA_CONFIG_SUPPORT_LONG_KEYS
   assert(strlen(key) <= 15);
+#endif
   _keys.push_back(key);
   std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
   _defaults[key] = std::move(defaultValue);
@@ -73,8 +75,8 @@ const std::string& Mycila::Config::getString(const char* key) const {
   }
 
   // real key exists ?
-  if (_prefs.isKey(key)) {
-    const std::string value = _prefs.getString(key).c_str();
+  if (_prefs.isKey(_prefKey(key))) {
+    const std::string value = _prefs.getString(_prefKey(key)).c_str();
 
     // key exist and is assigned to a value ?
     if (!value.empty()) {
@@ -84,7 +86,7 @@ const std::string& Mycila::Config::getString(const char* key) const {
     }
 
     // key exist but is not assigned to a value => remove it
-    _prefs.remove(key);
+    _prefs.remove(_prefKey(key));
     ESP_LOGD(TAG, "get(%s): Key cleaned up", key);
   }
 
@@ -115,10 +117,10 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
     return Mycila::Config::Result::UNKNOWN_KEY;
   }
 
-  const bool keyPersisted = _prefs.isKey(key);
+  const bool keyPersisted = _prefs.isKey(_prefKey(key));
 
   // key there and set to value
-  if (keyPersisted && strcmp(value.c_str(), _prefs.getString(key).c_str()) == 0) {
+  if (keyPersisted && strcmp(value.c_str(), _prefs.getString(_prefKey(key)).c_str()) == 0) {
     ESP_LOGD(TAG, "set(%s, %s): ALREADY_PERSISTED", key, value.c_str());
     return Mycila::Config::Result::ALREADY_PERSISTED;
   }
@@ -147,7 +149,7 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
   }
 
   // update failed ?
-  if (!_prefs.putString(key, value.c_str()))
+  if (!_prefs.putString(_prefKey(key), value.c_str()))
     return Mycila::Config::Result::FAIL_ON_WRITE;
 
   _cache[key] = std::move(value);
@@ -179,7 +181,7 @@ bool Mycila::Config::unset(const char* key, bool fireChangeCallback) {
   }
 
   // key not there or not removed
-  if (!_prefs.isKey(key) || !_prefs.remove(key))
+  if (!_prefs.isKey(_prefKey(key)) || !_prefs.remove(_prefKey(key)))
     return false;
 
   // key there and to remove
@@ -238,6 +240,10 @@ bool Mycila::Config::restore(const std::map<const char*, std::string>& settings)
 void Mycila::Config::clear() {
   _prefs.clear();
   _cache.clear();
+
+#ifdef MYCILA_CONFIG_SUPPORT_LONG_KEYS
+  _hashedKeys.clear();
+#endif
 }
 
 bool Mycila::Config::isPasswordKey(const char* key) const {
@@ -273,3 +279,33 @@ void Mycila::Config::toJson(const JsonObject& root) {
   }
 }
 #endif // MYCILA_JSON_SUPPORT
+
+#ifdef MYCILA_CONFIG_SUPPORT_LONG_KEYS
+const std::string& Mycila::Config::_hashedKey(const char* key) const {
+  // check if we have a cached value
+  auto it = _hashedKeys.find(key);
+  if (it != _hashedKeys.end()) {
+    return it->second;
+  }
+
+	uint8_t hash[16];
+	mbedtls_md_context_t ctx;
+	mbedtls_md_init(&ctx);
+	mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(MBEDTLS_MD_MD5), 0);
+	mbedtls_md_starts(&ctx);
+	mbedtls_md_update(&ctx, (const uint8_t*)key, strlen(key));
+	mbedtls_md_finish(&ctx, hash);
+	mbedtls_md_free(&ctx);
+
+  std::string hashedKey;
+  hashedKey.reserve(14);
+  static const char hexDigits[] = "0123456789abcdef";
+  for (size_t i = 0; i < 7; i++) {
+    hashedKey += hexDigits[hash[i] >> 4];
+    hashedKey += hexDigits[hash[i] & 0xF];
+  }
+  _hashedKeys[key] = std::move(hashedKey);
+  
+  return _hashedKeys[key];
+}
+#endif

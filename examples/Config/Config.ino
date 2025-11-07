@@ -44,6 +44,9 @@ void setup() {
   config.configure("key4", "foo");
   config.configure("key5", "baz");
   config.configure("key6", std::to_string(6));
+#ifdef MYCILA_CONFIG_SUPPORT_LONG_KEYS
+  config.configure("very_loooooooooooooong_key", "foo");
+#endif
 
   // tests
 
@@ -133,6 +136,11 @@ void setup() {
   assertEquals(config.get("key6"), "6");
   config.set("key6", std::to_string(7));
   assertEquals(config.get("key6"), "7");
+
+#ifdef MYCILA_CONFIG_SUPPORT_LONG_KEYS
+  assert(config.set("very_loooooooooooooong_key", "bar"));
+  assertEquals(config.get("very_loooooooooooooong_key"), "bar");
+#endif
 }
 
 void loop() {
