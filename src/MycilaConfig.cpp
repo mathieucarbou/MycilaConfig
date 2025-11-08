@@ -74,18 +74,9 @@ const std::string& Mycila::Config::getString(const char* key) const {
 
   // real key exists ?
   if (_prefs.isKey(key)) {
-    const std::string value = _prefs.getString(key).c_str();
-
-    // key exist and is assigned to a value ?
-    if (!value.empty()) {
-      _cache[key] = value;
-      ESP_LOGD(TAG, "get(%s): Key cached", key);
-      return _cache[key];
-    }
-
-    // key exist but is not assigned to a value => remove it
-    _prefs.remove(key);
-    ESP_LOGD(TAG, "get(%s): Key cleaned up", key);
+    _cache[key] = _prefs.getString(key).c_str();
+    ESP_LOGD(TAG, "get(%s): Key cached", key);
+    return _cache[key];
   }
 
   // key does not exist, or not assigned to a value
