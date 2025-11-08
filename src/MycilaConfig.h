@@ -10,6 +10,10 @@
 #include <string>
 #include <vector>
 
+#ifdef MYCILA_CONFIG_SUPPORT_LONG_KEYS
+  #include "mbedtls/md.h"
+#endif
+
 #ifdef MYCILA_JSON_SUPPORT
   #include <ArduinoJson.h>
 #endif
@@ -144,5 +148,13 @@ namespace Mycila {
       mutable std::map<const char*, std::string> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
       const std::string empty;
+
+#ifdef MYCILA_CONFIG_SUPPORT_LONG_KEYS
+      mutable std::map<const char*, std::string> _hashedKeys;
+      const char* _prefKey(const char* key) const { return strlen(key) > 15 ? _hashedKey(key).c_str() : key; }
+      const std::string& _hashedKey(const char* key) const;
+#else
+      const char* _prefKey(const char* key) const { return key; }
+#endif
   };
 } // namespace Mycila
