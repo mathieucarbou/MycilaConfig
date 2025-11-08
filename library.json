@@ -1,6 +1,6 @@
 {
   "name": "MycilaConfig",
-  "version": "7.3.0",
+  "version": "7.3.1",
   "description": "A simple and efficient config library",
   "keywords": "configuration",
   "homepage": "https://github.com/mathieucarbou/MycilaConfig",
