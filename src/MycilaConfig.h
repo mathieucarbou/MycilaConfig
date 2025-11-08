@@ -58,9 +58,12 @@ namespace Mycila {
         PERSISTED,
         UNKNOWN_KEY,
         ALREADY_PERSISTED,
+        ALREADY_ABSENT,
+        REMOVED,
         SAME_AS_DEFAULT,
         INVALID_VALUE,
-        FAIL_ON_WRITE
+        FAIL_ON_WRITE,
+        FAIL_ON_REMOVE,
       };
 
       class SetResult {
