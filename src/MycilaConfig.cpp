@@ -117,24 +117,6 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
 
   const bool keyPersisted = _prefs.isKey(key);
 
-  // if value is empty, this is a removal request in order to fallback to the default value
-  if (value.empty()) {
-    if (keyPersisted) {
-      if (_prefs.remove(key)) {
-        _cache.erase(key);
-        ESP_LOGD(TAG, "unset(%s): REMOVED", key);
-        if (fireChangeCallback && _changeCallback)
-          _changeCallback(key, _cache[key]);
-        return Mycila::Config::Result::REMOVED;
-      } else {
-        return Mycila::Config::Result::FAIL_ON_REMOVE;
-      }
-    } else {
-      ESP_LOGD(TAG, "unset(%s): ALREADY_ABSENT", key);
-      return Mycila::Config::Result::ALREADY_ABSENT;
-    }
-  }
-
   // key there and set to value
   if (keyPersisted && strcmp(value.c_str(), _prefs.getString(key).c_str()) == 0) {
     ESP_LOGD(TAG, "set(%s, %s): ALREADY_PERSISTED", key, value.c_str());
@@ -169,7 +151,7 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
     return Mycila::Config::Result::FAIL_ON_WRITE;
 
   _cache[key] = std::move(value);
-  ESP_LOGD(TAG, "set(%s, %s): PERSISTED", key, _cache[key].c_str());
+  ESP_LOGD(TAG, "set(%s, %s)", key, _cache[key].c_str());
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, _cache[key]);
 
