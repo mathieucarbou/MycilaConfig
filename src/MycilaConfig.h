@@ -14,10 +14,10 @@
   #include <ArduinoJson.h>
 #endif
 
-#define MYCILA_CONFIG_VERSION          "8.0.0"
+#define MYCILA_CONFIG_VERSION          "8.0.1"
 #define MYCILA_CONFIG_VERSION_MAJOR    8
 #define MYCILA_CONFIG_VERSION_MINOR    0
-#define MYCILA_CONFIG_VERSION_REVISION 0
+#define MYCILA_CONFIG_VERSION_REVISION 1
 
 // suffix to use for a setting key enabling a feature
 #ifndef MYCILA_CONFIG_KEY_ENABLE_SUFFIX
