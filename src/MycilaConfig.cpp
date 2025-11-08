@@ -288,14 +288,14 @@ const std::string& Mycila::Config::_hashedKey(const char* key) const {
     return it->second;
   }
 
-	uint8_t hash[16];
-	mbedtls_md_context_t ctx;
-	mbedtls_md_init(&ctx);
-	mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(MBEDTLS_MD_MD5), 0);
-	mbedtls_md_starts(&ctx);
-	mbedtls_md_update(&ctx, (const uint8_t*)key, strlen(key));
-	mbedtls_md_finish(&ctx, hash);
-	mbedtls_md_free(&ctx);
+  uint8_t hash[16];
+  mbedtls_md_context_t ctx;
+  mbedtls_md_init(&ctx);
+  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(MBEDTLS_MD_MD5), 0);
+  mbedtls_md_starts(&ctx);
+  mbedtls_md_update(&ctx, (const uint8_t*)key, strlen(key));
+  mbedtls_md_finish(&ctx, hash);
+  mbedtls_md_free(&ctx);
 
   std::string hashedKey;
   hashedKey.reserve(14);
@@ -305,7 +305,7 @@ const std::string& Mycila::Config::_hashedKey(const char* key) const {
     hashedKey += hexDigits[hash[i] & 0xF];
   }
   _hashedKeys[key] = std::move(hashedKey);
-  
+
   return _hashedKeys[key];
 }
 #endif
