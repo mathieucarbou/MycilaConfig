@@ -24,7 +24,7 @@ void Mycila::Config::begin(const char* name) {
 
 bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
   if (callback) {
-    _globalValidatorCallback = callback;
+    _globalValidatorCallback = std::move(callback);
     ESP_LOGD(TAG, "setValidator(callback)");
   } else {
     _globalValidatorCallback = nullptr;
@@ -41,7 +41,7 @@ bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callb
   }
 
   if (callback) {
-    _validators[key] = callback;
+    _validators[key] = std::move(callback);
     ESP_LOGD(TAG, "setValidator(%s, callback)", key);
   } else {
     _validators.erase(key);

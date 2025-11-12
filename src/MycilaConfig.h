@@ -8,6 +8,7 @@
 #include <Print.h>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifdef MYCILA_JSON_SUPPORT
@@ -82,10 +83,10 @@ namespace Mycila {
       void begin(const char* name = "CONFIG");
 
       // register a callback to be called when a config value changes
-      void listen(ConfigChangeCallback callback) { _changeCallback = callback; }
+      void listen(ConfigChangeCallback callback) { _changeCallback = std::move(callback); }
 
       // register a callback to be called when the configuration is restored
-      void listen(ConfigRestoredCallback callback) { _restoreCallback = callback; }
+      void listen(ConfigRestoredCallback callback) { _restoreCallback = std::move(callback); }
 
       // register a global callback to be called before a config value changes. You can pass a null callback to remove an existing one
       bool setValidator(ConfigValidatorCallback callback);
