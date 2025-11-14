@@ -24,8 +24,8 @@ void setup() {
 
   // listeners
 
-  config.listen([](const char* key, const std::string& newValue) {
-    Serial.printf("(listen) '%s' => '%s'\n", key, newValue.c_str());
+  config.listen([](const char* key, const char* newValue) {
+    Serial.printf("(listen) '%s' => '%s'\n", key, newValue);
   });
 
   config.listen([]() {
@@ -67,14 +67,14 @@ void setup() {
   assert(prefs.isKey("key1"));
 
   // set key to same value => no change
-  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Result::PERSISTED_ALREADY);
+  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Status::PERSISTED_ALREADY);
   assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE));
 
   // cache stored key
   assertEquals(config.get("key4"), "bar"); // load key and cache
 
   // set key to same value => no change
-  assert(config.set("key4", "bar") == Mycila::Config::Result::PERSISTED_ALREADY);
+  assert(config.set("key4", "bar") == Mycila::Config::Status::PERSISTED_ALREADY);
   assert(config.set("key4", "bar"));
 
   // set stored key to default value
@@ -95,7 +95,7 @@ void setup() {
   assertEquals(config.get("key4"), "foo");
 
   // unset non-existing key => noop
-  assert(config.unset("key4") == Mycila::Config::Result::REMOVED_ALREADY);
+  assert(config.unset("key4") == Mycila::Config::Status::REMOVED_ALREADY);
   assert(config.unset("key4"));
   assertEquals(config.get("key4"), "foo");
 
@@ -110,7 +110,7 @@ void setup() {
   assertEquals(config.get("key4"), "baz");
 
   // try set a NOT permitted value
-  assert(config.set("key4", "bar") == Mycila::Config::Result::ERR_INVALID_VALUE);
+  assert(config.set("key4", "bar") == Mycila::Config::Status::ERR_INVALID_VALUE);
   assert(!config.set("key4", "bar"));
   assertEquals(config.get("key4"), "baz");
 
@@ -118,11 +118,11 @@ void setup() {
   assert(config.setValidator("key4", nullptr));
 
   // set un-stored to default value => no change
-  assert(config.set("key5", "baz") == Mycila::Config::Result::PERSISTED_AS_DEFAULT);
+  assert(config.set("key5", "baz") == Mycila::Config::Status::PERSISTED_AS_DEFAULT);
   assert(config.set("key5", "baz"));
 
   // remove an inexisting key
-  assert(config.unset("key5") == Mycila::Config::Result::REMOVED_ALREADY);
+  assert(config.unset("key5") == Mycila::Config::Status::REMOVED_ALREADY);
   assert(config.unset("key5"));
 
   // try set to empty value a key which has a default value

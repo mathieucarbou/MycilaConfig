@@ -70,9 +70,9 @@ void setup() {
   config.configure("wifi_pwd");
   config.configure("port", "80");
 
-  // Listen to configuration changes
-  config.listen([](const char* key, const std::string& newValue) {
-    Serial.printf("Config changed: %s = %s\n", key, newValue.c_str());
+  // Register change callback
+  config.listen([](const char* key, const char* newValue) {
+    Serial.printf("Config changed: %s = %s\n", key, newValue);
   });
 
   // Listen to configuration restore events
@@ -87,22 +87,25 @@ void setup() {
   });
 
   // Set a per-key validator (optional)
-  config.setValidator("port", [](const char* key, const std::string& value) {
+  config.setValidator("port", [](const char* key, const char* value) {
     int port = std::stoi(value);
     return port > 0 && port < 65536;
   });
 
   // Set configuration values
-  auto result = config.set("wifi_ssid", "MyNetwork");
-  if (result) {
+  auto status = config.set("wifi_ssid", "MyNetwork");
+  if (status) {
     Serial.println("WiFi SSID saved successfully");
+    if (status.isStorageUpdated()) {
+      Serial.println("Value was written to storage");
+    }
   } else {
-    // Check detailed result
-    switch ((Mycila::Config::Result)result) {
-      case Mycila::Config::Result::INVALID_VALUE:
+    // Check detailed status
+    switch ((Mycila::Config::Status)status) {
+      case Mycila::Config::Status::ERR_INVALID_VALUE:
         Serial.println("Invalid value rejected by validator");
         break;
-      case Mycila::Config::Result::UNKNOWN_KEY:
+      case Mycila::Config::Status::ERR_UNKNOWN_KEY:
         Serial.println("Key not configured");
         break;
       default:
@@ -136,11 +139,15 @@ void loop() {}
 - **`void begin(const char* name = "CONFIG")`**  
   Initialize the configuration system with the specified NVS namespace.
 
-- **`void configure(const char* key, std::string defaultValue = "")`**  
-  Register a configuration key with an optional default value. Key must be ≤ 15 characters.
+- **`bool configure(const char* key, const std::string& defaultValue)`**  
+- **`bool configure(const char* key, const char* defaultValue = "")`**  
+  Register a configuration key with an optional default value. Key must be ≤ 15 characters. Returns true if the key was added successfully.
 
 - **`bool exists(const char* key) const`**  
   Check if a configuration key has been registered.
+
+- **`bool stored(const char* key) const`**  
+  Check if a configuration key is currently stored in NVS (not just using default).
 
 - **`void clear()`**  
   Clear all persisted settings and cache.
@@ -150,8 +157,8 @@ void loop() {}
 - **`const char* get(const char* key) const`**  
   Get the value as a C-string (never returns `nullptr`, returns `""` for unknown keys).
 
-- **`const std::string& getString(const char* key) const`**  
-  Get the value as a `std::string` reference.
+- **`std::string getString(const char* key) const`**  
+  Get the value as a `std::string` (returns a copy).
 
 - **`bool getBool(const char* key) const`**  
   Parse value as boolean:
@@ -176,8 +183,9 @@ void loop() {}
 
 #### Writing Values
 
-- **`OpResult set(const char* key, const std::string& value, bool fireChangeCallback = true)`**  
-  Set a configuration value. Returns a `OpResult` that converts to `bool` (true = persisted successfully).
+- **`Result set(const char* key, const std::string& value, bool fireChangeCallback = true)`**  
+- **`Result set(const char* key, const char* value, bool fireChangeCallback = true)`**  
+  Set a configuration value. Returns an `Result` that converts to `bool` (true = operation successful).
 
 - **`bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true)`**  
   Set multiple values at once. Returns true if any value was changed.
@@ -186,32 +194,39 @@ void loop() {}
   Set a boolean value (stored as `MYCILA_CONFIG_VALUE_TRUE` or `MYCILA_CONFIG_VALUE_FALSE`).
   Eg., `MYCILA_CONFIG_VALUE_TRUE` = "true", `MYCILA_CONFIG_VALUE_FALSE` = "false" (by default).
 
-- **`bool unset(const char* key, bool fireChangeCallback = true)`**  
-  Remove the persisted value (revert to default).
+- **`Result unset(const char* key, bool fireChangeCallback = true)`**  
+  Remove the persisted value (revert to default). Returns an `Result` indicating success or error.
 
-#### OpResult and Result Enum
+#### Result and Status Enum
 
-`set()` returns a `OpResult` object that:
-- Converts to `bool` (true only if value was persisted)
-- Can be cast to `Mycila::Config::Result` enum for detailed status
+`set()` and `unset()` return an `Result` object that:
 
-**Result codes:**
+- Converts to `bool` (true if operation was successful)
+- Can be cast to `Mycila::Config::Status` enum for detailed status
+- Has `isStorageUpdated()` method (true only if storage was actually modified)
+
+**Status codes:**
+
 - `PERSISTED` — Value written to NVS successfully
-- `ALREADY_PERSISTED` — Value already matches what's stored (no-op)
-- `SAME_AS_DEFAULT` — Value matches default and key not persisted (no-op)
-- `INVALID_VALUE` — Rejected by validator
-- `UNKNOWN_KEY` — Key not registered via `configure()`
-- `FAIL_ON_WRITE` — NVS write failed
+- `PERSISTED_ALREADY` — Value already matches what's stored (no-op)
+- `PERSISTED_AS_DEFAULT` — Value matches default and key not persisted (no-op)
+- `REMOVED` — Key successfully removed from NVS
+- `REMOVED_ALREADY` — Key was already not present in NVS (no-op)
+- `ERR_UNKNOWN_KEY` — Key not registered via `configure()`
+- `ERR_INVALID_VALUE` — Rejected by validator
+- `ERR_FAIL_ON_WRITE` — NVS write failed
+- `ERR_FAIL_ON_REMOVE` — NVS remove failed
 
 **Example:**
+
 ```cpp
 auto res = config.set("key", "value");
 if (!res) {
-  switch ((Mycila::Config::Result)res) {
-    case Mycila::Config::Result::INVALID_VALUE:
+  switch ((Mycila::Config::Status)res) {
+    case Mycila::Config::Status::ERR_INVALID_VALUE:
       Serial.println("Value rejected by validator");
       break;
-    case Mycila::Config::Result::UNKNOWN_KEY:
+    case Mycila::Config::Status::ERR_UNKNOWN_KEY:
       Serial.println("Key not configured");
       break;
     default:
@@ -219,21 +234,26 @@ if (!res) {
   }
 }
 
-// You can also return Result directly from functions returning OpResult:
-// return Mycila::Config::Result::UNKNOWN_KEY;
+// Check if storage was actually updated
+if (res.isStorageUpdated()) {
+  Serial.println("Value was written to NVS");
+}
+
+// You can also return Status directly from functions returning Result:
+// return Mycila::Config::Status::ERR_UNKNOWN_KEY;
 ```
 
 #### Callbacks and Validators
 
 - **`void listen(ConfigChangeCallback callback)`**  
-  Register a callback invoked when any value changes: `void callback(const char* key, const std::string& newValue)`
+  Register a callback invoked when any value changes: `void callback(const char* key, const char* newValue)`
 
 - **`void listen(ConfigRestoredCallback callback)`**  
   Register a callback invoked after a bulk restore: `void callback()`
 
 - **`bool setValidator(ConfigValidatorCallback callback)`**  
   Set a global validator called for all keys. Pass `nullptr` to remove.  
-  Signature: `bool validator(const char* key, const std::string& newValue)`
+  Signature: `bool validator(const char* key, const char* newValue)`
 
 - **`bool setValidator(const char* key, ConfigValidatorCallback callback)`**  
   Set a per-key validator. Pass `nullptr` to remove.
@@ -324,7 +344,7 @@ See [`examples/Config/Config.ino`](examples/Config/Config.ino) for a complete ex
 - Setting up keys and defaults
 - Using validators
 - Setting and getting values
-- Checking OpResult codes
+- Checking Result codes
 - Backup and restore
 
 ### JSON Export

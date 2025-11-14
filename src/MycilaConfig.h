@@ -56,7 +56,7 @@ namespace Mycila {
 
   class Config {
     public:
-      enum class Result {
+      enum class Status {
         PERSISTED,
         PERSISTED_ALREADY,
         PERSISTED_AS_DEFAULT,
@@ -68,18 +68,18 @@ namespace Mycila {
         ERR_FAIL_ON_REMOVE,
       };
 
-      class OpResult {
+      class Result {
         public:
-          constexpr OpResult(Result result) noexcept : _result(result) {} // NOLINT
+          constexpr Result(Status status) noexcept : _status(status) {} // NOLINT
           // operation successful
-          constexpr operator bool() const { return _result == Result::PERSISTED || _result == Result::PERSISTED_ALREADY || _result == Result::PERSISTED_AS_DEFAULT || _result == Result::REMOVED || _result == Result::REMOVED_ALREADY; }
-          constexpr operator Result() const { return _result; }
-          constexpr bool operator==(const Result& other) const { return _result == other; }
+          constexpr operator bool() const { return _status == Status::PERSISTED || _status == Status::PERSISTED_ALREADY || _status == Status::PERSISTED_AS_DEFAULT || _status == Status::REMOVED || _status == Status::REMOVED_ALREADY; }
+          constexpr operator Status() const { return _status; }
+          constexpr bool operator==(const Status& other) const { return _status == other; }
           // storage updated (value actually changed)
-          constexpr bool isStorageUpdated() const { return _result == Result::PERSISTED || _result == Result::REMOVED; }
+          constexpr bool isStorageUpdated() const { return _status == Status::PERSISTED || _status == Status::REMOVED; }
 
         private:
-          Result _result;
+          Status _status;
       };
 
       ~Config();
@@ -121,14 +121,14 @@ namespace Mycila {
       bool isEqual(const char* key, const std::string& value) const { return value == get(key); }
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
-      const OpResult set(const char* key, const std::string& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
+      const Result set(const char* key, const std::string& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
       // set the value of a setting key
       // if the key is null, it will be unset
-      const OpResult set(const char* key, const char* value, bool fireChangeCallback = true);
+      const Result set(const char* key, const char* value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE); }
 
-      Mycila::Config::OpResult unset(const char* key, bool fireChangeCallback = true);
+      Result unset(const char* key, bool fireChangeCallback = true);
 
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;

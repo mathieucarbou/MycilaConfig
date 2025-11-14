@@ -109,7 +109,7 @@ bool Mycila::Config::getBool(const char* key) const {
   return false;
 }
 
-const Mycila::Config::OpResult Mycila::Config::set(const char* key, const char* value, bool fireChangeCallback) {
+const Mycila::Config::Result Mycila::Config::set(const char* key, const char* value, bool fireChangeCallback) {
   if (value == nullptr) {
     return unset(key, fireChangeCallback);
   }
@@ -117,7 +117,7 @@ const Mycila::Config::OpResult Mycila::Config::set(const char* key, const char* 
   // check if the key is valid
   if (!exists(key)) {
     ESP_LOGW(TAG, "set(%s, %s): ERR_UNKNOWN_KEY", key, value);
-    return Mycila::Config::Result::ERR_UNKNOWN_KEY;
+    return Mycila::Config::Status::ERR_UNKNOWN_KEY;
   }
 
   const bool keyPersisted = stored(key);
@@ -125,20 +125,20 @@ const Mycila::Config::OpResult Mycila::Config::set(const char* key, const char* 
   // key there and set to value
   if (keyPersisted && strcmp(value, _prefs.getString(key).c_str()) == 0) {
     ESP_LOGD(TAG, "set(%s, %s): PERSISTED_ALREADY", key, value);
-    return Mycila::Config::Result::PERSISTED_ALREADY;
+    return Mycila::Config::Status::PERSISTED_ALREADY;
   }
 
   // key not there and set to default value
   if (!keyPersisted && strcmp(value, _defaults.at(key).get()) == 0) {
     ESP_LOGD(TAG, "set(%s, %s): PERSISTED_AS_DEFAULT", key, value);
-    return Mycila::Config::Result::PERSISTED_AS_DEFAULT;
+    return Mycila::Config::Status::PERSISTED_AS_DEFAULT;
   }
 
   // check if we have a global validator
   // and check if the value is valid
   if (_globalValidatorCallback && !_globalValidatorCallback(key, value)) {
     ESP_LOGD(TAG, "set(%s, %s): ERR_INVALID_VALUE", key, value);
-    return Mycila::Config::Result::ERR_INVALID_VALUE;
+    return Mycila::Config::Status::ERR_INVALID_VALUE;
   }
 
   // check if we have a specific validator for the key
@@ -147,14 +147,14 @@ const Mycila::Config::OpResult Mycila::Config::set(const char* key, const char* 
     // check if the value is valid
     if (!it->second(key, value)) {
       ESP_LOGD(TAG, "set(%s, %s): ERR_INVALID_VALUE", key, value);
-      return Mycila::Config::Result::ERR_INVALID_VALUE;
+      return Mycila::Config::Status::ERR_INVALID_VALUE;
     }
   }
 
   // update failed ?
   if (_prefs.putString(key, value) != strlen(value)) {
     ESP_LOGE(TAG, "set(%s, %s): ERR_FAIL_ON_WRITE", key, value);
-    return Mycila::Config::Result::ERR_FAIL_ON_WRITE;
+    return Mycila::Config::Status::ERR_FAIL_ON_WRITE;
   }
 
   ESP_LOGD(TAG, "set(%s, %s): PERSISTED", key, value);
@@ -163,7 +163,7 @@ const Mycila::Config::OpResult Mycila::Config::set(const char* key, const char* 
     // NOTE: The 'value' pointer passed to the callback is only valid during this callback execution.
     // Do NOT store or use the pointer after the callback returns.
     _changeCallback(key, value);
-  return Mycila::Config::Result::PERSISTED;
+  return Mycila::Config::Status::PERSISTED;
 }
 
 bool Mycila::Config::set(const std::map<const char*, std::string>& settings, bool fireChangeCallback) {
@@ -179,23 +179,23 @@ bool Mycila::Config::set(const std::map<const char*, std::string>& settings, boo
   return updates;
 }
 
-Mycila::Config::OpResult Mycila::Config::unset(const char* key, bool fireChangeCallback) {
+Mycila::Config::Result Mycila::Config::unset(const char* key, bool fireChangeCallback) {
   // check if the key is valid
   if (!exists(key)) {
     ESP_LOGW(TAG, "unset(%s): ERR_UNKNOWN_KEY", key);
-    return Mycila::Config::Result::ERR_UNKNOWN_KEY;
+    return Mycila::Config::Status::ERR_UNKNOWN_KEY;
   }
 
   // key not there
   if (!stored(key)) {
     ESP_LOGD(TAG, "unset(%s): REMOVED_ALREADY", key);
-    return Mycila::Config::Result::REMOVED_ALREADY;
+    return Mycila::Config::Status::REMOVED_ALREADY;
   }
 
   // or not removed
   if (!_prefs.remove(key)) {
     ESP_LOGE(TAG, "unset(%s): ERR_FAIL_ON_REMOVE", key);
-    return Mycila::Config::Result::ERR_FAIL_ON_REMOVE;
+    return Mycila::Config::Status::ERR_FAIL_ON_REMOVE;
   }
 
   // key there and to remove
@@ -204,7 +204,7 @@ Mycila::Config::OpResult Mycila::Config::unset(const char* key, bool fireChangeC
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, "");
 
-  return Mycila::Config::Result::REMOVED;
+  return Mycila::Config::Status::REMOVED;
 }
 
 void Mycila::Config::backup(Print& out, bool includeDefaults) {
