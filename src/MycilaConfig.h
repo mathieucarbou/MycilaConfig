@@ -59,10 +59,10 @@ namespace Mycila {
       enum class Result {
         PERSISTED,
         PERSISTED_ALREADY,
+        PERSISTED_AS_DEFAULT,
         REMOVED,
         REMOVED_ALREADY,
         ERR_UNKNOWN_KEY,
-        ERR_SAME_AS_DEFAULT,
         ERR_INVALID_VALUE,
         ERR_FAIL_ON_WRITE,
         ERR_FAIL_ON_REMOVE,
@@ -71,9 +71,12 @@ namespace Mycila {
       class OpResult {
         public:
           constexpr OpResult(Result result) noexcept : _result(result) {} // NOLINT
-          constexpr operator bool() const { return _result == Result::PERSISTED || _result == Result::PERSISTED_ALREADY || _result == Result::REMOVED || _result == Result::REMOVED_ALREADY; }
+          // operation successful
+          constexpr operator bool() const { return _result == Result::PERSISTED || _result == Result::PERSISTED_ALREADY || _result == Result::PERSISTED_AS_DEFAULT || _result == Result::REMOVED || _result == Result::REMOVED_ALREADY; }
           constexpr operator Result() const { return _result; }
           constexpr bool operator==(const Result& other) const { return _result == other; }
+          // storage updated (value actually changed)
+          constexpr bool isStorageUpdated() const { return _result == Result::PERSISTED || _result == Result::REMOVED; }
 
         private:
           Result _result;
@@ -101,8 +104,10 @@ namespace Mycila {
       // register a callback to be called before a config value changes. You can pass a null callback to remove an existing one
       bool setValidator(const char* key, ConfigValidatorCallback callback);
 
-      // returns false if the key is not found
+      // returns true if the key is configured
       bool exists(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
+      // returns true if the key is stored
+      bool stored(const char* key) const { return _prefs.isKey(key); }
 
       // get the value of a setting key
       // returns nullptr if the key is not supported (not configured)
@@ -117,6 +122,8 @@ namespace Mycila {
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
       const OpResult set(const char* key, const std::string& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
+      // set the value of a setting key
+      // if the key is null, it will be unset
       const OpResult set(const char* key, const char* value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE); }
@@ -126,6 +133,8 @@ namespace Mycila {
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;
 
+      // backup current settings to a Print stream
+      // if includeDefaults is true, also include default values for keys not set by the user
       void backup(Print& out, bool includeDefaults = true); // NOLINT
       bool restore(const char* data);
       bool restore(const std::map<const char*, std::string>& settings);
