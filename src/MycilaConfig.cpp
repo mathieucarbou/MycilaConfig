@@ -5,7 +5,6 @@
 #include "MycilaConfig.h"
 
 #include <assert.h>
-#include <esp32-hal.h>
 
 #include <algorithm>
 #include <map>
@@ -15,7 +14,28 @@
 
 #define TAG "CONFIG"
 
-static inline bool isFlashString(const char* str) { return esp_ptr_in_drom(str) || esp_ptr_in_rom(str); }
+// Copy of ESP-IDF esp_ptr_in_drom_alt
+__attribute__((always_inline)) inline static bool _my_esp_ptr_in_rom(const void* p) {
+  intptr_t ip = (intptr_t)p;
+  return
+#if CONFIG_IDF_TARGET_ARCH_RISCV && SOC_DROM_MASK_LOW != SOC_IROM_MASK_LOW
+    (ip >= SOC_DROM_MASK_LOW && ip < SOC_DROM_MASK_HIGH) ||
+#endif
+    (ip >= SOC_IROM_MASK_LOW && ip < SOC_IROM_MASK_HIGH);
+}
+
+// Copy of ESP-IDF esp_ptr_in_rom
+__attribute__((always_inline)) inline static bool _my_esp_ptr_in_drom(const void* p) {
+  int32_t drom_start_addr = SOC_DROM_LOW;
+#if CONFIG_ESP32S3_DATA_CACHE_16KB
+  drom_start_addr += 0x4000;
+#endif
+
+  return ((intptr_t)p >= drom_start_addr && (intptr_t)p < SOC_DROM_HIGH);
+}
+
+__attribute__((always_inline)) inline static bool isFlashString(const char* str) { return _my_esp_ptr_in_drom(str) || _my_esp_ptr_in_rom(str); }
+
 static void deleter_noop(char[]) {}
 static void deleter_delete(char p[]) { delete[] p; }
 
