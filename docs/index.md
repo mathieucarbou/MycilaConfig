@@ -176,8 +176,8 @@ void loop() {}
 
 #### Writing Values
 
-- **`SetResult set(const char* key, const std::string& value, bool fireChangeCallback = true)`**  
-  Set a configuration value. Returns a `SetResult` that converts to `bool` (true = persisted successfully).
+- **`OpResult set(const char* key, const std::string& value, bool fireChangeCallback = true)`**  
+  Set a configuration value. Returns a `OpResult` that converts to `bool` (true = persisted successfully).
 
 - **`bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true)`**  
   Set multiple values at once. Returns true if any value was changed.
@@ -189,9 +189,9 @@ void loop() {}
 - **`bool unset(const char* key, bool fireChangeCallback = true)`**  
   Remove the persisted value (revert to default).
 
-#### SetResult and Result Enum
+#### OpResult and Result Enum
 
-`set()` returns a `SetResult` object that:
+`set()` returns a `OpResult` object that:
 - Converts to `bool` (true only if value was persisted)
 - Can be cast to `Mycila::Config::Result` enum for detailed status
 
@@ -219,7 +219,7 @@ if (!res) {
   }
 }
 
-// You can also return Result directly from functions returning SetResult:
+// You can also return Result directly from functions returning OpResult:
 // return Mycila::Config::Result::UNKNOWN_KEY;
 ```
 
@@ -324,7 +324,7 @@ See [`examples/Config/Config.ino`](examples/Config/Config.ino) for a complete ex
 - Setting up keys and defaults
 - Using validators
 - Setting and getting values
-- Checking SetResult codes
+- Checking OpResult codes
 - Backup and restore
 
 ### JSON Export

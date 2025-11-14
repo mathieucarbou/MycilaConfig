@@ -102,32 +102,32 @@ bool Mycila::Config::getBool(const char* key) const {
   return false;
 }
 
-const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
+const Mycila::Config::OpResult Mycila::Config::set(const char* key, std::string value, bool fireChangeCallback) {
   // check if the key is valid
   if (!exists(key)) {
-    ESP_LOGW(TAG, "set(%s, %s): UNKNOWN_KEY", key, value.c_str());
-    return Mycila::Config::Result::UNKNOWN_KEY;
+    ESP_LOGW(TAG, "set(%s, %s): ERR_UNKNOWN_KEY", key, value.c_str());
+    return Mycila::Config::Result::ERR_UNKNOWN_KEY;
   }
 
   const bool keyPersisted = _prefs.isKey(key);
 
   // key there and set to value
   if (keyPersisted && strcmp(value.c_str(), _prefs.getString(key).c_str()) == 0) {
-    ESP_LOGD(TAG, "set(%s, %s): ALREADY_PERSISTED", key, value.c_str());
-    return Mycila::Config::Result::ALREADY_PERSISTED;
+    ESP_LOGD(TAG, "set(%s, %s): PERSISTED_ALREADY", key, value.c_str());
+    return Mycila::Config::Result::PERSISTED_ALREADY;
   }
 
   // key not there and set to default value
   if (!keyPersisted && _defaults[key] == value) {
-    ESP_LOGD(TAG, "set(%s, %s): SAME_AS_DEFAULT", key, value.c_str());
-    return Mycila::Config::Result::SAME_AS_DEFAULT;
+    ESP_LOGD(TAG, "set(%s, %s): ERR_SAME_AS_DEFAULT", key, value.c_str());
+    return Mycila::Config::Result::ERR_SAME_AS_DEFAULT;
   }
 
   // check if we have a global validator
   // and check if the value is valid
   if (_globalValidatorCallback && !_globalValidatorCallback(key, value)) {
-    ESP_LOGD(TAG, "set(%s, %s): INVALID_VALUE", key, value.c_str());
-    return Mycila::Config::Result::INVALID_VALUE;
+    ESP_LOGD(TAG, "set(%s, %s): ERR_INVALID_VALUE", key, value.c_str());
+    return Mycila::Config::Result::ERR_INVALID_VALUE;
   }
 
   // check if we have a specific validator for the key
@@ -135,15 +135,15 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
   if (it != _validators.end()) {
     // check if the value is valid
     if (!it->second(key, value)) {
-      ESP_LOGD(TAG, "set(%s, %s): INVALID_VALUE", key, value.c_str());
-      return Mycila::Config::Result::INVALID_VALUE;
+      ESP_LOGD(TAG, "set(%s, %s): ERR_INVALID_VALUE", key, value.c_str());
+      return Mycila::Config::Result::ERR_INVALID_VALUE;
     }
   }
 
   // update failed ?
-  if (!_prefs.putString(key, value.c_str())) {
-    ESP_LOGE(TAG, "set(%s, %s): FAIL_ON_WRITE", key, value.c_str());
-    return Mycila::Config::Result::FAIL_ON_WRITE;
+  if (_prefs.putString(key, value.c_str()) != strlen(value.c_str())) {
+    ESP_LOGE(TAG, "set(%s, %s): ERR_FAIL_ON_WRITE", key, value.c_str());
+    return Mycila::Config::Result::ERR_FAIL_ON_WRITE;
   }
 
   ESP_LOGD(TAG, "set(%s, %s): PERSISTED", key, value.c_str());
@@ -168,32 +168,41 @@ bool Mycila::Config::set(const std::map<const char*, std::string>& settings, boo
   return updates;
 }
 
-bool Mycila::Config::unset(const char* key, bool fireChangeCallback) {
+Mycila::Config::OpResult Mycila::Config::unset(const char* key, bool fireChangeCallback) {
   // check if the key is valid
   if (!exists(key)) {
-    ESP_LOGW(TAG, "unset(%s): Unknown key!", key);
-    return false;
+    ESP_LOGW(TAG, "unset(%s): ERR_UNKNOWN_KEY", key);
+    return Mycila::Config::Result::ERR_UNKNOWN_KEY;
   }
 
   // key not there or not removed
-  if (!_prefs.isKey(key) || !_prefs.remove(key))
-    return false;
+  if (!_prefs.isKey(key)) {
+    ESP_LOGD(TAG, "unset(%s): REMOVED_ALREADY", key);
+    return Mycila::Config::Result::REMOVED_ALREADY;
+  }
+
+  if (!_prefs.remove(key)) {
+    ESP_LOGE(TAG, "unset(%s): ERR_FAIL_ON_REMOVE", key);
+    return Mycila::Config::Result::ERR_FAIL_ON_REMOVE;
+  }
 
   // key there and to remove
+  ESP_LOGD(TAG, "unset(%s): REMOVED", key);
   _cache.erase(key);
-  ESP_LOGD(TAG, "unset(%s)", key);
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, _empty);
 
-  return true;
+  return Mycila::Config::Result::REMOVED;
 }
 
-void Mycila::Config::backup(Print& out) {
+void Mycila::Config::backup(Print& out, bool includeDefaults) {
   for (auto& key : _keys) {
-    out.print(key);
-    out.print('=');
-    out.print(get(key));
-    out.print("\n");
+    if (includeDefaults || _prefs.isKey(key)) {
+      out.print(key);
+      out.print('=');
+      out.print(get(key));
+      out.print("\n");
+    }
   }
 }
 

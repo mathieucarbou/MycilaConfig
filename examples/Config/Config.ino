@@ -66,15 +66,15 @@ void setup() {
   assert(prefs.isKey("key1"));
 
   // set key to same value => no change
-  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Result::ALREADY_PERSISTED);
-  assert(!config.set("key1", MYCILA_CONFIG_VALUE_TRUE));
+  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Result::PERSISTED_ALREADY);
+  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE));
 
   // cache stored key
   assertEquals(config.get("key4"), "bar"); // load key and cache
 
   // set key to same value => no change
-  assert(config.set("key4", "bar") == Mycila::Config::Result::ALREADY_PERSISTED);
-  assert(!config.set("key4", "bar"));
+  assert(config.set("key4", "bar") == Mycila::Config::Result::PERSISTED_ALREADY);
+  assert(config.set("key4", "bar"));
 
   // set stored key to default value
   assert(config.set("key4", "foo"));
@@ -94,7 +94,8 @@ void setup() {
   assertEquals(config.get("key4"), "foo");
 
   // unset non-existing key => noop
-  assert(!config.unset("key4"));
+  assert(config.unset("key4") == Mycila::Config::Result::REMOVED_ALREADY);
+  assert(config.unset("key4"));
   assertEquals(config.get("key4"), "foo");
 
   // set validator
@@ -108,7 +109,7 @@ void setup() {
   assertEquals(config.get("key4"), "baz");
 
   // try set a NOT permitted value
-  assert(config.set("key4", "bar") == Mycila::Config::Result::INVALID_VALUE);
+  assert(config.set("key4", "bar") == Mycila::Config::Result::ERR_INVALID_VALUE);
   assert(!config.set("key4", "bar"));
   assertEquals(config.get("key4"), "baz");
 
@@ -116,19 +117,50 @@ void setup() {
   assert(config.setValidator("key4", nullptr));
 
   // set un-stored to default value => no change
-  assert(config.set("key5", "baz") == Mycila::Config::Result::SAME_AS_DEFAULT);
+  assert(config.set("key5", "baz") == Mycila::Config::Result::ERR_SAME_AS_DEFAULT);
   assert(!config.set("key5", "baz"));
 
-  // unset non stored key => noop
-  assert(!config.unset("key5"));
+  // remove an inexisting key
+  assert(config.unset("key5") == Mycila::Config::Result::REMOVED_ALREADY);
+  assert(config.unset("key5"));
+
+  // try set to empty value a key which has a default value
+  assertEquals(config.get("key5"), "baz");
+  assert(config.set("key5", ""));
+  assertEquals(config.get("key5"), "");
 
   config.backup(Serial);
 
   config.set("key1", "value1");
   config.set("key2", "value2");
+  config.unset("key4"); // back to default value
 
+  // Should export everything
+  // key1=value1
+  // key2=value2
+  // key3=
+  // key4=foo
+  // key5=
+  // key6=6
   config.backup(Serial);
+
+  // Should export ONLY values set by user
+  // key1=value1
+  // key2=value2
+  // key5=
+  config.backup(Serial, false);
+
+  // Should only persist if required
+  // set(key1, ): PERSISTED
+  // set(key2, ): PERSISTED
+  // set(key3, value3): PERSISTED
+  // set(key4, foo): ERR_SAME_AS_DEFAULT
   config.restore("key1=\nkey2=\nkey3=value3\nkey4=foo\n");
+
+  assertEquals(config.get("key1"), "");
+  assertEquals(config.get("key2"), "");
+  assertEquals(config.get("key3"), "value3");
+  assertEquals(config.get("key4"), "foo"); // default value
 
   assertEquals(config.get("key6"), "6");
   config.set("key6", std::to_string(7));

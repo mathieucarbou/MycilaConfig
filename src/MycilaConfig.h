@@ -57,18 +57,22 @@ namespace Mycila {
     public:
       enum class Result {
         PERSISTED,
-        UNKNOWN_KEY,
-        ALREADY_PERSISTED,
-        SAME_AS_DEFAULT,
-        INVALID_VALUE,
-        FAIL_ON_WRITE
+        PERSISTED_ALREADY,
+        REMOVED,
+        REMOVED_ALREADY,
+        ERR_UNKNOWN_KEY,
+        ERR_SAME_AS_DEFAULT,
+        ERR_INVALID_VALUE,
+        ERR_FAIL_ON_WRITE,
+        ERR_FAIL_ON_REMOVE,
       };
 
-      class SetResult {
+      class OpResult {
         public:
-          constexpr SetResult(Result result) noexcept : _result(result) {} // NOLINT
-          constexpr operator bool() const { return _result == Result::PERSISTED; }
+          constexpr OpResult(Result result) noexcept : _result(result) {} // NOLINT
+          constexpr operator bool() const { return _result == Result::PERSISTED || _result == Result::PERSISTED_ALREADY || _result == Result::REMOVED || _result == Result::REMOVED_ALREADY; }
           constexpr operator Result() const { return _result; }
+          constexpr bool operator==(const Result& other) const { return _result == other; }
 
         private:
           Result _result;
@@ -110,16 +114,16 @@ namespace Mycila {
       bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
-      const SetResult set(const char* key, std::string value, bool fireChangeCallback = true);
+      const OpResult set(const char* key, std::string value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE); }
 
-      bool unset(const char* key, bool fireChangeCallback = true);
+      Mycila::Config::OpResult unset(const char* key, bool fireChangeCallback = true);
 
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;
 
-      void backup(Print& out); // NOLINT
+      void backup(Print& out, bool includeDefaults = true); // NOLINT
       bool restore(const char* data);
       bool restore(const std::map<const char*, std::string>& settings);
 
