@@ -46,28 +46,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - env: ci-arduino-3
-            board: esp32dev
-          - env: ci-arduino-3
-            board: esp32-s2-saola-1
-          - env: ci-arduino-3
-            board: esp32-s3-devkitc-1
-          - env: ci-arduino-3
-            board: esp32-c3-devkitc-02
-          - env: ci-arduino-3
-            board: esp32-c6-devkitc-1
-
-          # - env: ci-arduino-rc
-          #   board: esp32dev
-          # - env: ci-arduino-rc
-          #   board: esp32-s2-saola-1
-          # - env: ci-arduino-rc
-          #   board: esp32-s3-devkitc-1
-          # - env: ci-arduino-rc
-          #   board: esp32-c3-devkitc-02
-          # - env: ci-arduino-rc
-          #   board: esp32-c6-devkitc-1
+        env: ["ci-arduino-3"]
+        board: [
+            "denky_d4",
+            "esp32-c3-devkitc-02",
+            "esp32-c6-devkitc-1",
+            "esp32-gateway",
+            "esp32-poe-iso",
+            "esp32-poe",
+            "esp32-s2-saola-1",
+            "esp32-s3-devkitc-1",
+            "esp32s3box",
+            # "esp32-solo1",
+            "esp32dev",
+            "esp32s3box",
+            "lolin_s2_mini",
+            "tinypico",
+            "wemos_d1_uno32",
+            "wipy3",
+            "wt32-eth01",
+          ]
 
     steps:
       - name: Checkout
@@ -92,6 +90,6 @@ jobs:
           pip install --upgrade platformio
           pip install --upgrade cryptography
           pip install --upgrade intelhex
-      
+
       - run: PLATFORMIO_SRC_DIR=examples/Config PIO_BOARD=${{ matrix.board }} pio run -e ${{ matrix.env }}
       - run: PLATFORMIO_SRC_DIR=examples/ConfigJson PIO_BOARD=${{ matrix.board }} pio run -e ${{ matrix.env }}
