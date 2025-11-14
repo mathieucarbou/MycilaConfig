@@ -146,8 +146,9 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
     return Mycila::Config::Result::FAIL_ON_WRITE;
   }
 
+  ESP_LOGD(TAG, "set(%s, %s): PERSISTED", key, value.c_str());
+
   _cache[key] = std::move(value);
-  ESP_LOGD(TAG, "set(%s, %s)", key, _cache[key].c_str());
   if (fireChangeCallback && _changeCallback)
     _changeCallback(key, _cache[key]);
 
