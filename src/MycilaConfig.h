@@ -158,8 +158,8 @@ namespace Mycila {
       ConfigValidatorCallback _globalValidatorCallback = nullptr;
       std::vector<const char*> _keys;
       mutable Preferences _prefs;
-      mutable std::map<const char*, std::unique_ptr<char[]>> _defaults;
-      mutable std::map<const char*, std::unique_ptr<char[]>> _cache;
+      mutable std::map<const char*, std::unique_ptr<char[], void(*)(char[])>> _defaults;
+      mutable std::map<const char*, std::unique_ptr<char[], void(*)(char[])>> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
   };
 } // namespace Mycila

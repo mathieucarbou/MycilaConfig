@@ -44,6 +44,7 @@ void setup() {
   config.configure("key4", "foo");
   config.configure("key5", "baz");
   config.configure("key6", std::to_string(6));
+  config.configure("key7", "-1");
   config.configure("key10");
 
   // tests
@@ -136,6 +137,9 @@ void setup() {
   config.set("key2", "value2");
   config.unset("key4"); // back to default value
 
+  config.unset("key7"); // back to default value, but key was not stored
+  assert(config.getInt("key7") == -1);
+
   // Should export everything
   // key1=value1
   // key2=value2
@@ -173,7 +177,8 @@ void setup() {
   Serial.printf("Free heap: %" PRIu32 " bytes\n", ESP.getFreeHeap());
   for (size_t i = 0; i < 100; i++) {
     config.set("key10", "some long string to eat memory: " + std::to_string(i)); // key saved and cache erased => buffer allocation should be freed
-    Serial.printf("key10 = %s\n", config.get("key10"));                          // key cached
+    const char* v = config.get("key10");                                         // key cached
+    Serial.printf("key10 = %s\n", v);
   }
   config.unset("key10"); // cache erased
   Serial.printf("Free heap: %" PRIu32 " bytes\n", ESP.getFreeHeap());

@@ -5,6 +5,7 @@
 #include "MycilaConfig.h"
 
 #include <assert.h>
+#include <esp32-hal.h>
 
 #include <algorithm>
 #include <map>
@@ -13,6 +14,10 @@
 #include <utility>
 
 #define TAG "CONFIG"
+
+static inline bool isFlashString(const char* str) { return esp_ptr_in_drom(str) || esp_ptr_in_rom(str); }
+static void deleter_noop(char[]) {}
+static void deleter_delete(char p[]) { delete[] p; }
 
 Mycila::Config::~Config() {
   _prefs.end();
@@ -56,27 +61,39 @@ bool Mycila::Config::configure(const char* key, const char* defaultValue) {
   if (strlen(key) > 15) {
     return false;
   }
+
   _keys.push_back(key);
   std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
-  // Allocate and copy the default value to a managed buffer
-  char* buffer = new char[strlen(defaultValue) + 1];
-  strcpy(buffer, defaultValue); // NOLINT
-  _defaults[key] = std::unique_ptr<char[]>(buffer);
-  ESP_LOGD(TAG, "Config Key '%s' defaults to '%s'", key, _defaults.at(key).get());
+
+  if (isFlashString(defaultValue)) {
+    // If the default value is in flash (ROM or DROM), we can just store the pointer
+    _defaults.insert_or_assign(key, std::unique_ptr<char[], void (*)(char[])>(const_cast<char*>(defaultValue), deleter_noop));
+    ESP_LOGD(TAG, "Config Key '%s' defaults to flash string: '%s'", key, _defaults.at(key).get());
+    return true;
+
+  } else {
+    // Allocate and copy the default value to a managed buffer
+    char* buffer = new char[strlen(defaultValue) + 1];
+    strcpy(buffer, defaultValue); // NOLINT
+    _defaults.insert_or_assign(key, std::unique_ptr<char[], void (*)(char[])>(buffer, deleter_delete));
+    ESP_LOGD(TAG, "Config Key '%s' defaults to buffer string: '%s'", key, _defaults.at(key).get());
+  }
+
   return true;
 }
 
 const char* Mycila::Config::get(const char* key) const {
+  // check if key is configured
+  if (!exists(key)) {
+    ESP_LOGW(TAG, "get(%s): ERR_UNKNOWN_KEY", key);
+    return nullptr;
+  }
+
   // check if we have a cached value
   auto it = _cache.find(key);
   if (it != _cache.end()) {
+    ESP_LOGD(TAG, "get(%s): CACHE HIT", key);
     return it->second.get();
-  }
-
-  // not in cache ? is it a real key ?
-  if (!exists(key)) {
-    ESP_LOGW(TAG, "get(%s): Key unknown", key);
-    return nullptr;
   }
 
   // real key exists ?
@@ -85,12 +102,13 @@ const char* Mycila::Config::get(const char* key) const {
     String s = _prefs.getString(key);
     char* buffer = new char[s.length() + 1];
     strcpy(buffer, s.c_str()); // NOLINT
-    _cache[key] = std::unique_ptr<char[]>(buffer);
-    ESP_LOGD(TAG, "get(%s): Key cached", key);
+    _cache.insert_or_assign(key, std::unique_ptr<char[], void (*)(char[])>(buffer, deleter_delete));
+    ESP_LOGD(TAG, "get(%s): CACHED", key);
     return _cache.at(key).get();
   }
 
   // key does not exist, or not assigned to a value
+  ESP_LOGD(TAG, "get(%s): DEFAULT", key);
   return _defaults.at(key).get();
 }
 
@@ -158,7 +176,17 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
   }
 
   ESP_LOGD(TAG, "set(%s, %s): PERSISTED", key, value);
-  _cache.erase(key);
+
+  // cache value if it is a flash string because it has no heap cost and will fasten get().
+  // otherwise, remove any cached value to free memory. If called, get() will cache it.
+  if (isFlashString(value)) {
+    // If the default value is in flash (ROM or DROM), we can just store the pointer
+    _cache.insert_or_assign(key, std::unique_ptr<char[], void (*)(char[])>(const_cast<char*>(value), deleter_noop));
+    ESP_LOGD(TAG, "set(%s, %s): CACHED", key, value);
+  } else {
+    _cache.erase(key);
+  }
+
   if (fireChangeCallback && _changeCallback)
     // NOTE: The 'value' pointer passed to the callback is only valid during this callback execution.
     // Do NOT store or use the pointer after the callback returns.
@@ -210,9 +238,10 @@ Mycila::Config::Result Mycila::Config::unset(const char* key, bool fireChangeCal
 void Mycila::Config::backup(Print& out, bool includeDefaults) {
   for (auto& key : _keys) {
     if (includeDefaults || stored(key)) {
+      const char* v = get(key);
       out.print(key);
       out.print('=');
-      out.print(get(key));
+      out.print(v);
       out.print("\n");
     }
   }
