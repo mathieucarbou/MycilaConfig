@@ -112,7 +112,7 @@ const char* Mycila::Config::get(const char* key) const {
   // check if we have a cached value
   auto it = _cache.find(key);
   if (it != _cache.end()) {
-    ESP_LOGD(TAG, "get(%s): CACHE HIT", key);
+    ESP_LOGV(TAG, "get(%s): CACHE HIT", key);
     return it->second.get();
   }
 
@@ -128,7 +128,7 @@ const char* Mycila::Config::get(const char* key) const {
   }
 
   // key does not exist, or not assigned to a value
-  ESP_LOGD(TAG, "get(%s): DEFAULT", key);
+  ESP_LOGV(TAG, "get(%s): DEFAULT", key);
   return _defaults.at(key).get();
 }
 
