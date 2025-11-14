@@ -44,6 +44,7 @@ void setup() {
   config.configure("key4", "foo");
   config.configure("key5", "baz");
   config.configure("key6", std::to_string(6));
+  config.configure("key10");
 
   // tests
 
@@ -55,8 +56,8 @@ void setup() {
   assert(config.exists("key4"));
 
   // set global validator
-  assert(config.setValidator([](const char* key, const std::string& newValue) {
-    Serial.printf("(global validator) '%s' => '%s'\n", key, newValue.c_str());
+  assert(config.setValidator([](const char* key, const char* newValue) {
+    Serial.printf("(global validator) '%s' => '%s'\n", key, newValue);
     return true;
   }));
 
@@ -99,9 +100,9 @@ void setup() {
   assertEquals(config.get("key4"), "foo");
 
   // set validator
-  assert(config.setValidator("key4", [](const char* key, const std::string& newValue) {
-    Serial.printf("(validator) '%s' => '%s'\n", key, newValue.c_str());
-    return newValue.compare("baz") == 0;
+  assert(config.setValidator("key4", [](const char* key, const char* newValue) {
+    Serial.printf("(validator) '%s' => '%s'\n", key, newValue);
+    return strcmp(newValue, "baz") == 0;
   }));
 
   // try set a permitted value
@@ -157,14 +158,25 @@ void setup() {
   // set(key4, foo): ERR_SAME_AS_DEFAULT
   config.restore("key1=\nkey2=\nkey3=value3\nkey4=foo\n");
 
+  // key not configured:
+  assert(config.get("key11") == nullptr);
+
   assertEquals(config.get("key1"), "");
   assertEquals(config.get("key2"), "");
   assertEquals(config.get("key3"), "value3");
   assertEquals(config.get("key4"), "foo"); // default value
 
   assertEquals(config.get("key6"), "6");
-  config.set("key6", std::to_string(7));
+  config.set("key6", std::to_string(7)); // deleter should be called to delete buffer
   assertEquals(config.get("key6"), "7");
+
+  Serial.printf("Free heap: %" PRIu32 " bytes\n", ESP.getFreeHeap());
+  for (size_t i = 0; i < 100; i++) {
+    config.set("key10", "some long string to eat memory: " + std::to_string(i)); // key saved and cache erased => buffer allocation should be freed
+    Serial.printf("key10 = %s\n", config.get("key10"));                          // key cached
+  }
+  config.unset("key10"); // cache erased
+  Serial.printf("Free heap: %" PRIu32 " bytes\n", ESP.getFreeHeap());
 }
 
 void loop() {

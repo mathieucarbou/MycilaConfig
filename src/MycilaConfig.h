@@ -7,6 +7,7 @@
 #include <Preferences.h>
 #include <Print.h>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -49,9 +50,9 @@
 #endif
 
 namespace Mycila {
-  typedef std::function<void(const char* key, const std::string& newValue)> ConfigChangeCallback;
+  typedef std::function<void(const char* key, const char* newValue)> ConfigChangeCallback;
   typedef std::function<void()> ConfigRestoredCallback;
-  typedef std::function<bool(const char* key, const std::string& newValue)> ConfigValidatorCallback;
+  typedef std::function<bool(const char* key, const char* newValue)> ConfigValidatorCallback;
 
   class Config {
     public:
@@ -82,7 +83,8 @@ namespace Mycila {
 
       // Add a new configuration key with its default value
       // Returns true if the key was added, false otherwise (e.g. key too long)
-      bool configure(const char* key, std::string defaultValue = std::string());
+      bool configure(const char* key, const std::string& defaultValue) { return configure(key, defaultValue.c_str()); }
+      bool configure(const char* key, const char* defaultValue = "");
 
       // starts the config system
       void begin(const char* name = "CONFIG");
@@ -103,18 +105,19 @@ namespace Mycila {
       bool exists(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
 
       // get the value of a setting key
-      // returns "" if the key is not found, never returns nullptr
-      const char* get(const char* key) const { return getString(key).c_str(); }
-      const std::string& getString(const char* key) const;
+      // returns nullptr if the key is not supported (not configured)
+      const char* get(const char* key) const;
+      std::string getString(const char* key) const { return std::string(get(key)); }
       bool getBool(const char* key) const;
       long getLong(const char* key) const { return std::stol(get(key)); } // NOLINT
       int getInt(const char* key) const { return std::stoi(get(key)); }   // NOLINT
       float getFloat(const char* key) const { return std::stof(get(key)); }
       bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
-      bool isEqual(const char* key, const std::string& value) const { return get(key) == value; }
+      bool isEqual(const char* key, const std::string& value) const { return value == get(key); }
       bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
 
-      const OpResult set(const char* key, std::string value, bool fireChangeCallback = true);
+      const OpResult set(const char* key, const std::string& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
+      const OpResult set(const char* key, const char* value, bool fireChangeCallback = true);
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
       bool setBool(const char* key, bool value) { return set(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE); }
 
@@ -146,9 +149,8 @@ namespace Mycila {
       ConfigValidatorCallback _globalValidatorCallback = nullptr;
       std::vector<const char*> _keys;
       mutable Preferences _prefs;
-      mutable std::map<const char*, std::string> _defaults;
-      mutable std::map<const char*, std::string> _cache;
+      mutable std::map<const char*, std::unique_ptr<char[]>> _defaults;
+      mutable std::map<const char*, std::unique_ptr<char[]>> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
-      const std::string _empty;
   };
 } // namespace Mycila
