@@ -160,11 +160,11 @@ bool Mycila::Config::set(const std::map<const char*, std::string>& settings, boo
   // start restoring settings
   for (auto& key : _keys)
     if (!isEnableKey(key) && settings.find(key) != settings.end())
-      updates |= set(key, settings.at(key).c_str(), fireChangeCallback);
+      updates |= set(key, settings.at(key).c_str(), fireChangeCallback) == Mycila::Config::Result::PERSISTED;
   // then restore settings enabling/disabling a feature
   for (auto& key : _keys)
     if (isEnableKey(key) && settings.find(key) != settings.end())
-      updates |= set(key, settings.at(key).c_str(), fireChangeCallback);
+      updates |= set(key, settings.at(key).c_str(), fireChangeCallback) == Mycila::Config::Result::PERSISTED;
   return updates;
 }
 
