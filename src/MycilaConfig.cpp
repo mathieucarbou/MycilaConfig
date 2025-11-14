@@ -141,8 +141,10 @@ const Mycila::Config::SetResult Mycila::Config::set(const char* key, std::string
   }
 
   // update failed ?
-  if (!_prefs.putString(key, value.c_str()))
+  if (!_prefs.putString(key, value.c_str())) {
+    ESP_LOGE(TAG, "set(%s, %s): FAIL_ON_WRITE", key, value.c_str());
     return Mycila::Config::Result::FAIL_ON_WRITE;
+  }
 
   _cache[key] = std::move(value);
   ESP_LOGD(TAG, "set(%s, %s)", key, _cache[key].c_str());
