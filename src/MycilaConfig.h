@@ -77,7 +77,8 @@ namespace Mycila {
       ~Config();
 
       // Add a new configuration key with its default value
-      void configure(const char* key, std::string defaultValue = std::string());
+      // Returns true if the key was added, false otherwise (e.g. key too long)
+      bool configure(const char* key, std::string defaultValue = std::string());
 
       // starts the config system
       void begin(const char* name = "CONFIG");
@@ -144,6 +145,6 @@ namespace Mycila {
       mutable std::map<const char*, std::string> _defaults;
       mutable std::map<const char*, std::string> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
-      const std::string empty;
+      const std::string _empty;
   };
 } // namespace Mycila

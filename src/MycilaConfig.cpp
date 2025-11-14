@@ -51,12 +51,15 @@ bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callb
   return true;
 }
 
-void Mycila::Config::configure(const char* key, std::string defaultValue) {
-  assert(strlen(key) <= 15);
+bool Mycila::Config::configure(const char* key, std::string defaultValue) {
+  if (strlen(key) > 15) {
+    return false;
+  }
   _keys.push_back(key);
   std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
   _defaults[key] = std::move(defaultValue);
   ESP_LOGD(TAG, "Config Key '%s' defaults to '%s'", key, _defaults[key].c_str());
+  return true;
 }
 
 const std::string& Mycila::Config::getString(const char* key) const {
@@ -69,7 +72,7 @@ const std::string& Mycila::Config::getString(const char* key) const {
   // not in cache ? is it a real key ?
   if (!exists(key)) {
     ESP_LOGW(TAG, "get(%s): Key unknown", key);
-    return empty;
+    return _empty;
   }
 
   // real key exists ?
@@ -177,7 +180,7 @@ bool Mycila::Config::unset(const char* key, bool fireChangeCallback) {
   _cache.erase(key);
   ESP_LOGD(TAG, "unset(%s)", key);
   if (fireChangeCallback && _changeCallback)
-    _changeCallback(key, empty);
+    _changeCallback(key, _empty);
 
   return true;
 }
