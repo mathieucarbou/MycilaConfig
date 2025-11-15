@@ -3,9 +3,11 @@
  * Copyright (C) 2023-2025 Mathieu Carbou
  */
 #include <MycilaConfig.h>
+#include <MycilaNVSStorage.h>
 #include <Preferences.h>
 
-Mycila::Config config;
+Mycila::NVSStorage storage;
+Mycila::Config config(storage);
 Preferences prefs;
 
 static void assertEquals(const char* actual, const char* expected) {

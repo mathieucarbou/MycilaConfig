@@ -36,16 +36,12 @@ __attribute__((always_inline)) inline static bool _my_esp_ptr_in_drom(const void
 
 __attribute__((always_inline)) inline static bool isFlashString(const char* str) { return _my_esp_ptr_in_drom(str) || _my_esp_ptr_in_rom(str); }
 
-static void deleter_noop(char[]) {}
-static void deleter_delete(char p[]) { delete[] p; }
-
-Mycila::Config::~Config() {
-  _prefs.end();
-}
+static constexpr void deleter_noop(char[]) {}
+static constexpr void deleter_delete(char p[]) { delete[] p; }
 
 bool Mycila::Config::begin(const char* name) {
   ESP_LOGI(TAG, "Initializing Config System: %s...", name);
-  return _prefs.begin(name, false);
+  return _storage->begin(name);
 }
 
 bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
@@ -116,13 +112,12 @@ const char* Mycila::Config::get(const char* key) const {
     return it->second.get();
   }
 
+  std::optional<std::unique_ptr<char[]>> value = _storage->load(key);
+
   // real key exists ?
-  if (stored(key)) {
+  if (value.has_value()) {
     // allocate and copy the string to cache
-    String s = _prefs.getString(key);
-    char* buffer = new char[s.length() + 1];
-    strcpy(buffer, s.c_str()); // NOLINT
-    _cache.insert_or_assign(key, std::unique_ptr<char[], void (*)(char[])>(buffer, deleter_delete));
+    _cache.insert_or_assign(key, std::unique_ptr<char[], void (*)(char[])>(value.value().release(), deleter_delete));
     ESP_LOGD(TAG, "get(%s): CACHED", key);
     return _cache.at(key).get();
   }
@@ -184,7 +179,7 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
   }
 
   // update failed ?
-  if (_prefs.putString(key, value) != strlen(value)) {
+  if (!_storage->storeString(key, value)) {
     ESP_LOGE(TAG, "set(%s, %s): ERR_FAIL_ON_WRITE", key, value);
     return Mycila::Config::Status::ERR_FAIL_ON_WRITE;
   }
@@ -228,13 +223,8 @@ Mycila::Config::Result Mycila::Config::unset(const char* key, bool fireChangeCal
     return Mycila::Config::Status::ERR_UNKNOWN_KEY;
   }
 
-  // key not there
-  if (!_prefs.isKey(key)) {
-    return Mycila::Config::Status::REMOVED;
-  }
-
   // or not removed
-  if (!_prefs.remove(key)) {
+  if (!_storage->remove(key)) {
     ESP_LOGE(TAG, "unset(%s): ERR_FAIL_ON_REMOVE", key);
     return Mycila::Config::Status::ERR_FAIL_ON_REMOVE;
   }
@@ -296,7 +286,7 @@ bool Mycila::Config::restore(const std::map<const char*, std::string>& settings)
 }
 
 void Mycila::Config::clear() {
-  _prefs.clear();
+  _storage->removeAll();
   _cache.clear();
 }
 
