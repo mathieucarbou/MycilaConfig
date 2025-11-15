@@ -1,6 +1,8 @@
 #include <MycilaConfig.h>
+#include <MycilaConfigStoragePreferences.h>
 
-Mycila::Config config;
+Mycila::PreferencesStorage storage;
+Mycila::Config config(storage);
 Preferences prefs;
 
 static void assertEquals(const char* actual, const char* expected) {

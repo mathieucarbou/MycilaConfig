@@ -4,17 +4,19 @@
  */
 #pragma once
 
-#include <Preferences.h>
 #include <Print.h>
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
 
 #ifdef MYCILA_JSON_SUPPORT
   #include <ArduinoJson.h>
 #endif
+
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
 #define MYCILA_CONFIG_VERSION          "9.0.3"
 #define MYCILA_CONFIG_VERSION_MAJOR    9
@@ -56,6 +58,23 @@ namespace Mycila {
 
   class Config {
     public:
+      using Value = std::variant<
+        std::monostate, // as null
+        std::unique_ptr<char[], void (*)(char[])>,
+        const char*>;
+
+      class Storage {
+        public:
+          Storage() = default;
+          virtual ~Storage() = default;
+          virtual bool begin(const char* name) { return false; }
+          virtual bool hasKey(const char* key) const { return false; }
+          virtual bool remove(const char* key) { return false; }
+          virtual void removeAll() {}
+          virtual bool store(const char* key, const Value& value) { return false; }
+          virtual std::optional<Value> load(const char* key) const { return std::nullopt; }
+      };
+
       enum class Status {
         PERSISTED,
         PERSISTED_AS_DEFAULT,
@@ -81,7 +100,8 @@ namespace Mycila {
           Status _status;
       };
 
-      ~Config();
+      explicit Config(Storage& storage) : _storage(&storage) {}
+      ~Config() = default;
 
       // Add a new configuration key with its default value
       // Returns true if the key was added, false otherwise (e.g. key too long)
@@ -106,7 +126,7 @@ namespace Mycila {
       // returns true if the key is configured
       bool exists(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
       // returns true if the key is stored
-      bool stored(const char* key) const { return _prefs.isKey(key); }
+      bool stored(const char* key) const { return _storage->hasKey(key); }
 
       // get the value of a setting key
       // returns nullptr if the key is not supported (not configured)
@@ -152,11 +172,11 @@ namespace Mycila {
 #endif
 
     private:
+      Storage* _storage;
       ConfigChangeCallback _changeCallback = nullptr;
       ConfigRestoredCallback _restoreCallback = nullptr;
       ConfigValidatorCallback _globalValidatorCallback = nullptr;
       std::vector<const char*> _keys;
-      mutable Preferences _prefs;
       mutable std::map<const char*, std::unique_ptr<char[], void (*)(char[])>> _defaults;
       mutable std::map<const char*, std::unique_ptr<char[], void (*)(char[])>> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
