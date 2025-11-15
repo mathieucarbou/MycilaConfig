@@ -149,27 +149,54 @@ namespace Mycila {
       // returns true if the key is stored
       bool stored(const char* key) const { return _storage->hasKey(key); }
 
-      // get the value of a setting key
-      // returns nullptr if the key is not supported (not configured)
-      const char* get(const char* key) const;
-      std::string getString(const char* key) const { return std::string(get(key)); }
-      bool getBool(const char* key) const;
-      long getLong(const char* key) const { return std::stol(get(key)); } // NOLINT
-      int getInt(const char* key) const { return std::stoi(get(key)); }   // NOLINT
-      float getFloat(const char* key) const { return std::stof(get(key)); }
-      bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
-      bool isEqual(const char* key, const std::string& value) const { return value == get(key); }
-      bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
+      // get list of configured keys
+      const std::vector<const char*>& keys() const { return _keys; }
+      // this method can be used to find the right pointer to a supported key given a random buffer
+      const char* keyRef(const char* buffer) const;
 
+      bool setBool(const char* key, bool value, bool fireChangeCallback = true) { return set(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE, fireChangeCallback); }
+      bool setFloat(const char* key, float_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setDouble(const char* key, double_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setInt(const char* key, int value, bool fireChangeCallback = true) { return setI32(key, value, fireChangeCallback); }
+      bool setLong(const char* key, long value, bool fireChangeCallback = true) { return setI32(key, value, fireChangeCallback); } // NOLINT
+      bool setI8(const char* key, int8_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setU8(const char* key, uint8_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setI16(const char* key, int16_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setU16(const char* key, uint16_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setI32(const char* key, int32_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setU32(const char* key, uint32_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setI64(const char* key, int64_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
+      bool setU64(const char* key, uint64_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
       const Result set(const char* key, const std::string& value, bool fireChangeCallback = true) { return set(key, value.c_str(), fireChangeCallback); }
-      // set the value of a setting key
-      // if the key is null, it will be unset
+      // set the value of a setting key, and if the key is null, it will be unset
       const Result set(const char* key, const char* value, bool fireChangeCallback = true);
+
       bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true);
-      bool setBool(const char* key, bool value) { return set(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE); }
+
+      bool getBool(const char* key) const;
+      float getFloat(const char* key) const { return std::stof(get(key)); }
+      double getDouble(const char* key) const { return std::stod(get(key)); }
+      int getInt(const char* key) const { return getI32(key); }
+      long getLong(const char* key) const { return getI32(key); } // NOLINT
+      int8_t getI8(const char* key) const { return static_cast<int8_t>(std::stoi(get(key))); }
+      uint8_t getU8(const char* key) const { return static_cast<uint8_t>(std::stoul(get(key))); }
+      int16_t getI16(const char* key) const { return static_cast<int16_t>(std::stoi(get(key))); }
+      uint16_t getU16(const char* key) const { return static_cast<uint16_t>(std::stoul(get(key))); }
+      int32_t getI32(const char* key) const { return static_cast<int32_t>(std::stol(get(key))); }
+      uint32_t getU32(const char* key) const { return static_cast<uint32_t>(std::stoul(get(key))); }
+      int64_t getI64(const char* key) const { return static_cast<int64_t>(std::stoll(get(key))); }
+      uint64_t getU64(const char* key) const { return static_cast<uint64_t>(std::stoull(get(key))); }
+      std::string getString(const char* key) const { return std::string(get(key)); }
+      // returns the value of a setting key, or nullptr if the key is not configured
+      const char* get(const char* key) const;
 
       Result unset(const char* key, bool fireChangeCallback = true);
+      // clear cache and remove all stored keys and values
+      void clear();
 
+      bool isEmpty(const char* key) const { return get(key)[0] == '\0'; }
+      bool isEqual(const char* key, const std::string& value) const { return isEqual(key, value.c_str()); }
+      bool isEqual(const char* key, const char* value) const { return strcmp(get(key), value) == 0; }
       bool isPasswordKey(const char* key) const;
       bool isEnableKey(const char* key) const;
 
@@ -178,15 +205,6 @@ namespace Mycila {
       void backup(Print& out, bool includeDefaults = true); // NOLINT
       bool restore(const char* data);
       bool restore(const std::map<const char*, std::string>& settings);
-
-      // clear all saved settings and current cache
-      void clear();
-
-      // get list of keys
-      const std::vector<const char*>& keys() const { return _keys; }
-
-      // this method can be used to find the right pointer to a supported key given a random buffer
-      const char* keyRef(const char* buffer) const;
 
 #ifdef MYCILA_JSON_SUPPORT
       void toJson(const JsonObject& root);
