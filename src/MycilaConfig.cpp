@@ -61,7 +61,7 @@ bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
 
 bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callback) {
   // check if the key is valid
-  if (!exists(key)) {
+  if (!configured(key)) {
     ESP_LOGW(TAG, "setValidator(%s): Unknown key!", key);
     return false;
   }
@@ -104,7 +104,7 @@ bool Mycila::Config::configure(const char* key, const char* defaultValue) {
 
 const char* Mycila::Config::get(const char* key) const {
   // check if key is configured
-  if (!exists(key)) {
+  if (!configured(key)) {
     ESP_LOGW(TAG, "get(%s): ERR_UNKNOWN_KEY", key);
     return nullptr;
   }
@@ -153,7 +153,7 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
   }
 
   // check if the key is valid
-  if (!exists(key)) {
+  if (!configured(key)) {
     ESP_LOGW(TAG, "set(%s, %s): ERR_UNKNOWN_KEY", key, value);
     return Mycila::Config::Status::ERR_UNKNOWN_KEY;
   }
@@ -223,7 +223,7 @@ bool Mycila::Config::set(const std::map<const char*, std::string>& settings, boo
 
 Mycila::Config::Result Mycila::Config::unset(const char* key, bool fireChangeCallback) {
   // check if the key is valid
-  if (!exists(key)) {
+  if (!configured(key)) {
     ESP_LOGW(TAG, "unset(%s): ERR_UNKNOWN_KEY", key);
     return Mycila::Config::Status::ERR_UNKNOWN_KEY;
   }

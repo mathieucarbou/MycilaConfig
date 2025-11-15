@@ -103,7 +103,7 @@ namespace Mycila {
       bool setValidator(const char* key, ConfigValidatorCallback callback);
 
       // returns true if the key is configured
-      bool exists(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
+      bool configured(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
       // returns true if the key is stored
       bool stored(const char* key) const { return _prefs.isKey(key); }
 

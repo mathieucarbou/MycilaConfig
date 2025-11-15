@@ -143,7 +143,7 @@ void loop() {}
 - **`bool configure(const char* key, const char* defaultValue = "")`**  
   Register a configuration key with an optional default value. Key must be ≤ 15 characters. Returns true if the key was added successfully.
 
-- **`bool exists(const char* key) const`**  
+- **`bool configured(const char* key) const`**  
   Check if a configuration key has been registered.
 
 - **`bool stored(const char* key) const`**  

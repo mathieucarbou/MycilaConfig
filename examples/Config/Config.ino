@@ -54,7 +54,7 @@ void setup() {
   assertEquals(config.get("key3"), "");
 
   // check exists key
-  assert(config.exists("key4"));
+  assert(config.configured("key4"));
 
   // set global validator
   assert(config.setValidator([](const char* key, const char* newValue) {
