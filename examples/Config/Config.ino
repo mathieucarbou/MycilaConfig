@@ -96,7 +96,7 @@ void setup() {
   assertEquals(config.get("key4"), "foo");
 
   // unset non-existing key => noop
-  assert(config.unset("key4") == Mycila::Config::Status::REMOVED_ALREADY);
+  assert(config.unset("key4") == Mycila::Config::Status::REMOVED);
   assert(config.unset("key4"));
   assertEquals(config.get("key4"), "foo");
 
@@ -119,11 +119,11 @@ void setup() {
   assert(config.setValidator("key4", nullptr));
 
   // set un-stored to default value => no change
-  assert(config.set("key5", "baz") == Mycila::Config::Status::PERSISTED_AS_DEFAULT);
+  assert(config.set("key5", "baz") == Mycila::Config::Status::DEFAULTED);
   assert(config.set("key5", "baz"));
 
   // remove an inexisting key
-  assert(config.unset("key5") == Mycila::Config::Status::REMOVED_ALREADY);
+  assert(config.unset("key5") == Mycila::Config::Status::REMOVED);
   assert(config.unset("key5"));
 
   // try set to empty value a key which has a default value
@@ -159,7 +159,7 @@ void setup() {
   // set(key1, ): PERSISTED
   // set(key2, ): PERSISTED
   // set(key3, value3): PERSISTED
-  // set(key4, foo): PERSISTED_AS_DEFAULT
+  // set(key4, foo): DEFAULTED
   config.restore("key1=\nkey2=\nkey3=value3\nkey4=foo\n");
 
   // key not configured:

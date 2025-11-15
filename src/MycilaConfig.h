@@ -58,9 +58,8 @@ namespace Mycila {
     public:
       enum class Status {
         PERSISTED,
-        PERSISTED_AS_DEFAULT,
+        DEFAULTED,
         REMOVED,
-        REMOVED_ALREADY,
         ERR_UNKNOWN_KEY,
         ERR_INVALID_VALUE,
         ERR_FAIL_ON_WRITE,
@@ -71,7 +70,7 @@ namespace Mycila {
         public:
           constexpr Result(Status status) noexcept : _status(status) {} // NOLINT
           // operation successful
-          constexpr operator bool() const { return _status == Status::PERSISTED || _status == Status::PERSISTED_AS_DEFAULT || _status == Status::REMOVED || _status == Status::REMOVED_ALREADY; }
+          constexpr operator bool() const { return _status == Status::PERSISTED || _status == Status::DEFAULTED || _status == Status::REMOVED; }
           constexpr operator Status() const { return _status; }
           constexpr bool operator==(const Status& other) const { return _status == other; }
           // storage updated (value actually changed)

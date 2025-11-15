@@ -208,9 +208,8 @@ void loop() {}
 **Status codes:**
 
 - `PERSISTED` — Value written to NVS successfully
-- `PERSISTED_AS_DEFAULT` — Value matches default and key not persisted (no-op)
-- `REMOVED` — Key successfully removed from NVS
-- `REMOVED_ALREADY` — Key was already not present in NVS (no-op)
+- `DEFAULTED` — Value matches default and key not persisted (no-op)
+- `REMOVED` — Key successfully removed from NVS, or was not present (no-op)
 - `ERR_UNKNOWN_KEY` — Key not registered via `configure()`
 - `ERR_INVALID_VALUE` — Rejected by validator
 - `ERR_FAIL_ON_WRITE` — NVS write failed

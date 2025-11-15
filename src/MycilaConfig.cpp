@@ -162,8 +162,8 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
 
   // key not there and set to default value
   if (!keyPersisted && strcmp(value, _defaults.at(key).get()) == 0) {
-    ESP_LOGD(TAG, "set(%s, %s): PERSISTED_AS_DEFAULT", key, value);
-    return Mycila::Config::Status::PERSISTED_AS_DEFAULT;
+    ESP_LOGD(TAG, "set(%s, %s): DEFAULTED", key, value);
+    return Mycila::Config::Status::DEFAULTED;
   }
 
   // check if we have a global validator
@@ -230,8 +230,7 @@ Mycila::Config::Result Mycila::Config::unset(const char* key, bool fireChangeCal
 
   // key not there
   if (!stored(key)) {
-    ESP_LOGD(TAG, "unset(%s): REMOVED_ALREADY", key);
-    return Mycila::Config::Status::REMOVED_ALREADY;
+    return Mycila::Config::Status::REMOVED;
   }
 
   // or not removed
