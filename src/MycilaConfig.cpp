@@ -43,9 +43,9 @@ Mycila::Config::~Config() {
   _prefs.end();
 }
 
-void Mycila::Config::begin(const char* name) {
+bool Mycila::Config::begin(const char* name) {
   ESP_LOGI(TAG, "Initializing Config System: %s...", name);
-  _prefs.begin(name, false);
+  return _prefs.begin(name, false);
 }
 
 bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
@@ -159,12 +159,6 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
   }
 
   const bool keyPersisted = stored(key);
-
-  // key there and set to value
-  if (keyPersisted && strcmp(value, _prefs.getString(key).c_str()) == 0) {
-    ESP_LOGD(TAG, "set(%s, %s): PERSISTED_ALREADY", key, value);
-    return Mycila::Config::Status::PERSISTED_ALREADY;
-  }
 
   // key not there and set to default value
   if (!keyPersisted && strcmp(value, _defaults.at(key).get()) == 0) {

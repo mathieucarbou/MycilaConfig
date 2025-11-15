@@ -68,14 +68,14 @@ void setup() {
   assert(prefs.isKey("key1"));
 
   // set key to same value => no change
-  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Status::PERSISTED_ALREADY);
+  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Status::PERSISTED);
   assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE));
 
   // cache stored key
   assertEquals(config.get("key4"), "bar"); // load key and cache
 
   // set key to same value => no change
-  assert(config.set("key4", "bar") == Mycila::Config::Status::PERSISTED_ALREADY);
+  assert(config.set("key4", "bar") == Mycila::Config::Status::PERSISTED);
   assert(config.set("key4", "bar"));
 
   // set stored key to default value

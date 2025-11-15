@@ -58,7 +58,6 @@ namespace Mycila {
     public:
       enum class Status {
         PERSISTED,
-        PERSISTED_ALREADY,
         PERSISTED_AS_DEFAULT,
         REMOVED,
         REMOVED_ALREADY,
@@ -72,7 +71,7 @@ namespace Mycila {
         public:
           constexpr Result(Status status) noexcept : _status(status) {} // NOLINT
           // operation successful
-          constexpr operator bool() const { return _status == Status::PERSISTED || _status == Status::PERSISTED_ALREADY || _status == Status::PERSISTED_AS_DEFAULT || _status == Status::REMOVED || _status == Status::REMOVED_ALREADY; }
+          constexpr operator bool() const { return _status == Status::PERSISTED || _status == Status::PERSISTED_AS_DEFAULT || _status == Status::REMOVED || _status == Status::REMOVED_ALREADY; }
           constexpr operator Status() const { return _status; }
           constexpr bool operator==(const Status& other) const { return _status == other; }
           // storage updated (value actually changed)
@@ -89,8 +88,8 @@ namespace Mycila {
       bool configure(const char* key, const std::string& defaultValue) { return configure(key, defaultValue.c_str()); }
       bool configure(const char* key, const char* defaultValue = "");
 
-      // starts the config system
-      void begin(const char* name = "CONFIG");
+      // starts the config system and returns true if successful
+      bool begin(const char* name = "CONFIG");
 
       // register a callback to be called when a config value changes
       void listen(ConfigChangeCallback callback) { _changeCallback = std::move(callback); }
@@ -158,8 +157,8 @@ namespace Mycila {
       ConfigValidatorCallback _globalValidatorCallback = nullptr;
       std::vector<const char*> _keys;
       mutable Preferences _prefs;
-      mutable std::map<const char*, std::unique_ptr<char[], void(*)(char[])>> _defaults;
-      mutable std::map<const char*, std::unique_ptr<char[], void(*)(char[])>> _cache;
+      mutable std::map<const char*, std::unique_ptr<char[], void (*)(char[])>> _defaults;
+      mutable std::map<const char*, std::unique_ptr<char[], void (*)(char[])>> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
   };
 } // namespace Mycila

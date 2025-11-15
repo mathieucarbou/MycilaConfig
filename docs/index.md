@@ -208,7 +208,6 @@ void loop() {}
 **Status codes:**
 
 - `PERSISTED` — Value written to NVS successfully
-- `PERSISTED_ALREADY` — Value already matches what's stored (no-op)
 - `PERSISTED_AS_DEFAULT` — Value matches default and key not persisted (no-op)
 - `REMOVED` — Key successfully removed from NVS
 - `REMOVED_ALREADY` — Key was already not present in NVS (no-op)
