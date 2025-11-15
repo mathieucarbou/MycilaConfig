@@ -1,4 +1,9 @@
+// SPDX-License-Identifier: MIT
+/*
+ * Copyright (C) 2023-2025 Mathieu Carbou
+ */
 #include <MycilaConfig.h>
+#include <Preferences.h>
 
 Mycila::Config config;
 Preferences prefs;

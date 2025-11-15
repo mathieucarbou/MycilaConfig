@@ -1,6 +1,10 @@
+// SPDX-License-Identifier: MIT
+/*
+ * Copyright (C) 2023-2025 Mathieu Carbou
+ */
 #include <ArduinoJson.h>
-#include <MycilaConfig.h>
 #include <StreamString.h>
+#include <MycilaConfig.h>
 
 #define KEY_DEBUG_ENABLE "debug_enable"
 #define KEY_WIFI_SSID "wifi_ssid"

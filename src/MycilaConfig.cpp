@@ -229,7 +229,7 @@ Mycila::Config::Result Mycila::Config::unset(const char* key, bool fireChangeCal
   }
 
   // key not there
-  if (!stored(key)) {
+  if (!_prefs.isKey(key)) {
     return Mycila::Config::Status::REMOVED;
   }
 

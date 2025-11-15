@@ -4,17 +4,19 @@
  */
 #pragma once
 
-#include <Preferences.h>
 #include <Print.h>
+
+#ifdef MYCILA_JSON_SUPPORT
+  #include <ArduinoJson.h>
+#endif
+
+#include <Preferences.h>
+
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-
-#ifdef MYCILA_JSON_SUPPORT
-  #include <ArduinoJson.h>
-#endif
 
 #define MYCILA_CONFIG_VERSION          "9.0.3"
 #define MYCILA_CONFIG_VERSION_MAJOR    9
@@ -151,11 +153,11 @@ namespace Mycila {
 #endif
 
     private:
+      mutable Preferences _prefs;
       ConfigChangeCallback _changeCallback = nullptr;
       ConfigRestoredCallback _restoreCallback = nullptr;
       ConfigValidatorCallback _globalValidatorCallback = nullptr;
       std::vector<const char*> _keys;
-      mutable Preferences _prefs;
       mutable std::map<const char*, std::unique_ptr<char[], void (*)(char[])>> _defaults;
       mutable std::map<const char*, std::unique_ptr<char[], void (*)(char[])>> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
