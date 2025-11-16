@@ -139,20 +139,19 @@ namespace Mycila {
           return value;
         return std::nullopt;
       }
-      std::optional<std::unique_ptr<char[]>> load(const char* key) const override {
+      std::optional<Config::Str> load(const char* key) const override {
         if (!_handle)
           return std::nullopt;
         size_t len = 0;
         esp_err_t err = nvs_get_str(_handle, key, NULL, &len);
         if (err != ESP_OK || !len)
           return std::nullopt;
-        char* buffer = new char[len];
-        err = nvs_get_str(_handle, key, buffer, &len);
+        Config::Str str(len - 1);
+        err = nvs_get_str(_handle, key, str.buffer(), &len);
         if (err != ESP_OK) {
-          delete[] buffer;
           return std::nullopt;
         }
-        return std::unique_ptr<char[]>(buffer);
+        return str;
       }
 
     private:

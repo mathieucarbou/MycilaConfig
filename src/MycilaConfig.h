@@ -57,6 +57,31 @@ namespace Mycila {
 
   class Config {
     public:
+      /**
+       * A string wrapper with a pointer that can point to flash memory or heap memory
+       */
+      class Str {
+        public:
+          Str() : Str("") {}
+          explicit Str(size_t length);
+          explicit Str(const char* str);
+          ~Str();
+          Str(Str&& other) noexcept;
+          Str& operator=(Str&& other) noexcept;
+          Str(const Str& other) = delete;
+          Str& operator=(const Str& other) = delete;
+          bool inFlash() const;
+          const char* c_str() const { return _buffer; }
+          char* buffer() const { return _buffer; }
+          size_t heapUsage() const;
+
+        private:
+          char* _buffer;
+      };
+
+      /**
+       * Abstract storage interface
+       */
       class Storage {
         public:
           Storage() = default;
@@ -94,9 +119,12 @@ namespace Mycila {
           virtual std::optional<uint32_t> loadU32(const char* key) const { return std::nullopt; }
           virtual std::optional<int64_t> loadI64(const char* key) const { return std::nullopt; }
           virtual std::optional<uint64_t> loadU64(const char* key) const { return std::nullopt; }
-          virtual std::optional<std::unique_ptr<char[]>> load(const char* key) const { return std::nullopt; }
+          virtual std::optional<Str> load(const char* key) const { return std::nullopt; }
       };
 
+      /**
+       * Result status of a set/unset operation
+       */
       enum class Status {
         PERSISTED,
         DEFAULTED,
@@ -107,6 +135,9 @@ namespace Mycila {
         ERR_FAIL_ON_REMOVE,
       };
 
+      /**
+       * Result of a set/unset operation
+       */
       class Result {
         public:
           constexpr Result(Status status) noexcept : _status(status) {} // NOLINT
@@ -124,10 +155,10 @@ namespace Mycila {
       explicit Config(Storage& storage) : _storage(&storage) {}
       ~Config() = default;
 
-      // Add a new configuration key with its default value
+      // Add a new configuration key with its default value and optional validator
       // Returns true if the key was added, false otherwise (e.g. key too long)
-      bool configure(const char* key, const std::string& defaultValue) { return configure(key, defaultValue.c_str()); }
-      bool configure(const char* key, const char* defaultValue = "");
+      bool configure(const char* key, const std::string& defaultValue, ConfigValidatorCallback callback = nullptr) { return configure(key, defaultValue.c_str(), callback); }
+      bool configure(const char* key, const char* defaultValue = "", ConfigValidatorCallback callback = nullptr);
 
       // starts the config system and returns true if successful
       bool begin(const char* name = "CONFIG");
@@ -140,12 +171,11 @@ namespace Mycila {
 
       // register a global callback to be called before a config value changes. You can pass a null callback to remove an existing one
       bool setValidator(ConfigValidatorCallback callback);
-
       // register a callback to be called before a config value changes. You can pass a null callback to remove an existing one
       bool setValidator(const char* key, ConfigValidatorCallback callback);
 
       // returns true if the key is configured
-      bool configured(const char* key) const { return std::find(_keys.begin(), _keys.end(), key) != _keys.end(); };
+      bool configured(const char* key) const;
       // returns true if the key is stored
       bool stored(const char* key) const { return _storage->hasKey(key); }
 
@@ -219,8 +249,8 @@ namespace Mycila {
       ConfigRestoredCallback _restoreCallback = nullptr;
       ConfigValidatorCallback _globalValidatorCallback = nullptr;
       std::vector<const char*> _keys;
-      mutable std::map<const char*, std::unique_ptr<char[], void (*)(char[])>> _defaults;
-      mutable std::map<const char*, std::unique_ptr<char[], void (*)(char[])>> _cache;
+      mutable std::map<const char*, Str> _defaults;
+      mutable std::map<const char*, Str> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
   };
 } // namespace Mycila
