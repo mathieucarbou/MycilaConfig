@@ -63,10 +63,13 @@ namespace Mycila {
       class Str {
         public:
           Str() : Str("") {}
-          explicit Str(size_t length);
+          explicit Str(size_t length) {
+            _buffer = new char[length + 1];
+            _buffer[0] = '\0';
+          }
           explicit Str(const char* str);
           ~Str();
-          Str(Str&& other) noexcept;
+          Str(Str&& other) noexcept : _buffer(other._buffer) { other._buffer = nullptr; }
           Str& operator=(Str&& other) noexcept;
           Str(const Str& other) = delete;
           Str& operator=(const Str& other) = delete;
@@ -152,6 +155,28 @@ namespace Mycila {
           Status _status;
       };
 
+      /**
+       * Key definition
+       */
+      class Key {
+        public:
+          const char* name;
+          Str defaultValue;
+          Key(const char* n, Str&& dv) : name(n), defaultValue(std::move(dv)) {}
+          Key(Key&& other) noexcept : name(other.name), defaultValue(std::move(other.defaultValue)) {}
+          Key& operator=(Key&& other) noexcept {
+            name = other.name;
+            defaultValue = std::move(other.defaultValue);
+            return *this;
+          }
+          Key(const Key&) = delete;
+          Key& operator=(const Key&) = delete;
+      };
+
+      //////////////////
+      // Config class //
+      //////////////////
+
       explicit Config(Storage& storage) : _storage(&storage) {}
       ~Config() = default;
 
@@ -180,9 +205,9 @@ namespace Mycila {
       bool stored(const char* key) const { return _storage->hasKey(key); }
 
       // get list of configured keys
-      const std::vector<const char*>& keys() const { return _keys; }
+      const std::vector<Key>& keys() const { return _keys; }
       // this method can be used to find the right pointer to a supported key given a random buffer
-      const char* keyRef(const char* buffer) const;
+      const Key* keyRef(const char* buffer) const;
 
       bool setBool(const char* key, bool value, bool fireChangeCallback = true) { return set(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE, fireChangeCallback); }
       bool setFloat(const char* key, float_t value, bool fireChangeCallback = true) { return set(key, std::to_string(value), fireChangeCallback); }
@@ -248,8 +273,7 @@ namespace Mycila {
       ConfigChangeCallback _changeCallback = nullptr;
       ConfigRestoredCallback _restoreCallback = nullptr;
       ConfigValidatorCallback _globalValidatorCallback = nullptr;
-      std::vector<const char*> _keys;
-      mutable std::map<const char*, Str> _defaults;
+      std::vector<Key> _keys;
       mutable std::map<const char*, Str> _cache;
       mutable std::map<const char*, ConfigValidatorCallback> _validators;
   };

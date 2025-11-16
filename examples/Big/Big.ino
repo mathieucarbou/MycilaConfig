@@ -210,7 +210,7 @@ void loop() {
   if (op < 40) {
     // 40% chance: GET operation
     const auto& keys = config.keys();
-    const char* key = keys[random(0, keys.size())];
+    const char* key = keys[random(0, keys.size())].name;
     const char* value = config.get(key);
     Serial.printf("[GET] %s = %s\n", key, value);
 

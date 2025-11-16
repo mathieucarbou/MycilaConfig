@@ -40,11 +40,6 @@ __attribute__((always_inline)) inline static bool _isFlashString(const char* str
 // Str //
 /////////
 
-Mycila::Config::Str::Str(size_t length) {
-  _buffer = new char[length + 1];
-  _buffer[0] = '\0';
-}
-
 Mycila::Config::Str::Str(const char* str) {
   if (_isFlashString(str)) {
     _buffer = const_cast<char*>(str);
@@ -58,10 +53,6 @@ Mycila::Config::Str::~Str() {
   if (!_isFlashString(_buffer)) {
     delete[] _buffer;
   }
-}
-
-Mycila::Config::Str::Str(Str&& other) noexcept : _buffer(other._buffer) {
-  other._buffer = nullptr;
 }
 
 Mycila::Config::Str& Mycila::Config::Str::operator=(Str&& other) noexcept {
@@ -78,7 +69,7 @@ Mycila::Config::Str& Mycila::Config::Str::operator=(Str&& other) noexcept {
   return *this;
 }
 
-inline bool Mycila::Config::Str::inFlash() const {
+bool Mycila::Config::Str::inFlash() const {
   return _isFlashString(_buffer);
 }
 
@@ -99,10 +90,10 @@ bool Mycila::Config::begin(const char* name, bool preload) {
   if (preload) {
     ESP_LOGI(TAG, "Preloading Config System: %s...", name);
     for (auto& key : _keys) {
-      auto value = _storage->loadString(key);
+      auto value = _storage->loadString(key.name);
       if (value.has_value()) {
-        _cache.insert_or_assign(key, std::move(value.value()));
-        ESP_LOGD(TAG, "get(%s): CACHED", key);
+        _cache.insert_or_assign(key.name, std::move(value.value()));
+        ESP_LOGD(TAG, "get(%s): CACHED", key.name);
       }
     }
   }
@@ -114,17 +105,17 @@ bool Mycila::Config::configure(const char* key, const char* defaultValue, Config
     return false;
   }
 
-  _keys.push_back(key);
-  std::sort(_keys.begin(), _keys.end(), [](const char* a, const char* b) { return strcmp(a, b) < 0; });
+  Key k(key, Str(defaultValue));
 
-  _defaults.insert_or_assign(key, Str(defaultValue));
-
-  if (_defaults.at(key).inFlash()) {
-    ESP_LOGD(TAG, "Config Key '%s' defaults to string pointer: '%s'", key, defaultValue);
+  if (k.defaultValue.inFlash()) {
+    ESP_LOGD(TAG, "Config Key '%s' defaults to string pointer: '%s'", k.name, k.defaultValue.c_str());
 
   } else {
-    ESP_LOGD(TAG, "Config Key '%s' defaults to string buffer: '%s'", key, defaultValue);
+    ESP_LOGD(TAG, "Config Key '%s' defaults to string buffer: '%s'", k.name, k.defaultValue.c_str());
   }
+
+  _keys.push_back(std::move(k));
+  std::sort(_keys.begin(), _keys.end(), [](const Key& a, const Key& b) { return strcmp(a.name, b.name) < 0; });
 
   if (callback) {
     _validators[key] = std::move(callback);
@@ -146,8 +137,10 @@ bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
 }
 
 bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callback) {
+  Key* k = const_cast<Key*>(this->keyRef(key));
+
   // check if the key is valid
-  if (!configured(key)) {
+  if (k == nullptr) {
     ESP_LOGW(TAG, "setValidator(%s): Unknown key!", key);
     return false;
   }
@@ -164,13 +157,12 @@ bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callb
 }
 
 bool Mycila::Config::configured(const char* key) const {
-  // just compare pointer values for speed
-  return std::find(_keys.begin(), _keys.end(), key) != _keys.end();
-};
+  return this->keyRef(key) != nullptr;
+}
 
-const char* Mycila::Config::keyRef(const char* buffer) const {
-  auto it = std::lower_bound(_keys.begin(), _keys.end(), buffer, [](const char* a, const char* b) { return strcmp(a, b) < 0; });
-  return it != _keys.end() && strcmp(*it, buffer) == 0 ? static_cast<const char*>(*it) : nullptr;
+const Mycila::Config::Key* Mycila::Config::keyRef(const char* buffer) const {
+  auto it = std::lower_bound(_keys.begin(), _keys.end(), buffer, [](const Key& a, const char* b) { return strcmp(a.name, b) < 0; });
+  return it != _keys.end() && strcmp(it->name, buffer) == 0 ? &(*it) : nullptr;
 }
 
 const Mycila::Config::Result Mycila::Config::set(const char* key, const char* value, bool fireChangeCallback) {
@@ -178,8 +170,10 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
     return unset(key, fireChangeCallback);
   }
 
+  const Key* k = this->keyRef(key);
+
   // check if the key is valid
-  if (!configured(key)) {
+  if (k == nullptr) {
     ESP_LOGW(TAG, "set(%s, %s): ERR_UNKNOWN_KEY", key, value);
     return Mycila::Config::Status::ERR_UNKNOWN_KEY;
   }
@@ -187,7 +181,7 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
   const bool keyPersisted = stored(key);
 
   // key not there and set to default value
-  if (!keyPersisted && strcmp(value, _defaults.at(key).c_str()) == 0) {
+  if (!keyPersisted && strcmp(value, k->defaultValue.c_str()) == 0) {
     ESP_LOGD(TAG, "set(%s, %s): DEFAULTED", key, value);
     return Mycila::Config::Status::DEFAULTED;
   }
@@ -200,10 +194,10 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
   }
 
   // check if we have a specific validator for the key
-  auto it = _validators.find(key);
+  auto it = _validators.find(k->name);
   if (it != _validators.end()) {
     // check if the value is valid
-    if (!it->second(key, value)) {
+    if (!it->second(k->name, value)) {
       ESP_LOGD(TAG, "set(%s, %s): ERR_INVALID_VALUE", key, value);
       return Mycila::Config::Status::ERR_INVALID_VALUE;
     }
@@ -230,13 +224,13 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
 bool Mycila::Config::set(const std::map<const char*, std::string>& settings, bool fireChangeCallback) {
   bool updates = false;
   // start restoring settings
-  for (auto& key : _keys)
-    if (!isEnableKey(key) && settings.find(key) != settings.end())
-      updates |= set(key, settings.at(key).c_str(), fireChangeCallback).isStorageUpdated();
+  for (const auto& k : _keys)
+    if (!isEnableKey(k.name) && settings.find(k.name) != settings.end())
+      updates |= set(k.name, settings.at(k.name).c_str(), fireChangeCallback).isStorageUpdated();
   // then restore settings enabling/disabling a feature
-  for (auto& key : _keys)
-    if (isEnableKey(key) && settings.find(key) != settings.end())
-      updates |= set(key, settings.at(key).c_str(), fireChangeCallback).isStorageUpdated();
+  for (const auto& k : _keys)
+    if (isEnableKey(k.name) && settings.find(k.name) != settings.end())
+      updates |= set(k.name, settings.at(k.name).c_str(), fireChangeCallback).isStorageUpdated();
   return updates;
 }
 
@@ -254,8 +248,10 @@ bool Mycila::Config::getBool(const char* key) const {
 }
 
 const char* Mycila::Config::get(const char* key) const {
+  const Key* k = this->keyRef(key);
+
   // check if key is configured
-  if (!configured(key)) {
+  if (k == nullptr) {
     ESP_LOGW(TAG, "get(%s): ERR_UNKNOWN_KEY", key);
     return nullptr;
   }
@@ -279,12 +275,14 @@ const char* Mycila::Config::get(const char* key) const {
 
   // key does not exist, or not assigned to a value
   ESP_LOGV(TAG, "get(%s): DEFAULT", key);
-  return _defaults.at(key).c_str();
+  return k->defaultValue.c_str();
 }
 
 Mycila::Config::Result Mycila::Config::unset(const char* key, bool fireChangeCallback) {
+  const Key* k = this->keyRef(key);
+
   // check if the key is valid
-  if (!configured(key)) {
+  if (k == nullptr) {
     ESP_LOGW(TAG, "unset(%s): ERR_UNKNOWN_KEY", key);
     return Mycila::Config::Status::ERR_UNKNOWN_KEY;
   }
@@ -325,9 +323,9 @@ bool Mycila::Config::isEnableKey(const char* key) const {
 
 void Mycila::Config::backup(Print& out, bool includeDefaults) {
   for (auto& key : _keys) {
-    if (includeDefaults || stored(key)) {
-      const char* v = get(key);
-      out.print(key);
+    if (includeDefaults || stored(key.name)) {
+      const char* v = get(key.name);
+      out.print(key.name);
       out.print('=');
       out.print(v);
       out.print("\n");
@@ -339,9 +337,9 @@ bool Mycila::Config::restore(const char* data) {
   std::map<const char*, std::string> settings;
   for (auto& key : _keys) {
     // int start = data.indexOf(key);
-    char* start = strstr(data, key);
+    char* start = strstr(data, key.name);
     if (start) {
-      start += strlen(key);
+      start += strlen(key.name);
       if (*start != '=')
         continue;
       start++;
@@ -349,10 +347,10 @@ bool Mycila::Config::restore(const char* data) {
       if (!end)
         end = strchr(start, '\n');
       if (!end) {
-        ESP_LOGW(TAG, "restore(%s): Invalid data!", key);
+        ESP_LOGW(TAG, "restore(%s): Invalid data!", key.name);
         return false;
       }
-      settings[key] = std::string(start, end - start);
+      settings[key.name] = std::string(start, end - start);
     }
   }
   return restore(settings);
@@ -373,43 +371,34 @@ bool Mycila::Config::restore(const std::map<const char*, std::string>& settings)
 size_t Mycila::Config::heapUsage() const {
   size_t total = 0;
 
-  // std::map is implemented as a red-black tree with nodes allocated on heap
-  // Each node contains: 3 pointers (parent, left, right), 1 byte (color), and the key-value pair
-  // The key-value pair is std::pair<const char* const, Str>
-  // - const char* const: pointer (not counted, points to flash)
-  // - Str: contains char* pointer + bool flag
-
   // Red-black tree node overhead (without the payload)
   static constexpr size_t rbTreeNodeOverhead = 3 * sizeof(void*) + sizeof(char);
 
-  // Size of the pair stored in each node (key pointer + Str object)
-  static constexpr size_t pairSize = sizeof(const char*) + sizeof(Str);
+  // _keys vector: the vector itself has capacity-based allocation
+  // Each Key contains: const char* name (pointer to flash) + Str defaultValue
+  if (_keys.capacity() > 0) {
+    total += _keys.capacity() * sizeof(Key);
 
-  // Total per map node
-  static constexpr size_t mapNodeSize = rbTreeNodeOverhead + pairSize;
-
-  // defaults map
-  for (const auto& [key, val] : _defaults) {
-    total += mapNodeSize; // map node + pair structure
-    total += val.heapUsage();
+    // Check each Key's defaultValue for heap-allocated strings
+    for (const auto& key : _keys) {
+      total += key.defaultValue.heapUsage();
+    }
   }
 
-  // cache map
+  // cache map: std::map<const char*, Str>
+  // Each node: rb-tree overhead + pair<const char*, Str>
+  static constexpr size_t cachePairSize = sizeof(const char*) + sizeof(Str);
+  static constexpr size_t cacheNodeSize = rbTreeNodeOverhead + cachePairSize;
+
   for (const auto& [key, val] : _cache) {
-    total += mapNodeSize; // map node + pair structure
-    total += val.heapUsage();
+    total += cacheNodeSize;   // map node + pair structure
+    total += val.heapUsage(); // heap-allocated string content (if any)
   }
 
-  // validators map (if any)
+  // validators map: std::map<const char*, ConfigValidatorCallback>
   // Each node: rb-tree overhead + pair<const char*, ConfigValidatorCallback>
   static constexpr size_t validatorPairSize = sizeof(const char*) + sizeof(ConfigValidatorCallback);
   total += _validators.size() * (rbTreeNodeOverhead + validatorPairSize);
-
-  // _keys vector: the vector itself has capacity-based allocation
-  // Only counts if capacity > 0 (heap-allocated storage)
-  if (_keys.capacity() > 0) {
-    total += _keys.capacity() * sizeof(const char*);
-  }
 
   return total;
 }
@@ -417,11 +406,11 @@ size_t Mycila::Config::heapUsage() const {
 #ifdef MYCILA_JSON_SUPPORT
 void Mycila::Config::toJson(const JsonObject& root) {
   for (auto& key : _keys) {
-    const std::string& value = get(key);
+    const std::string& value = get(key.name);
   #ifdef MYCILA_CONFIG_PASSWORD_MASK
-    root[key] = value.empty() || !isPasswordKey(key) ? value : MYCILA_CONFIG_PASSWORD_MASK;
+    root[key.name] = value.empty() || !isPasswordKey(key.name) ? value : MYCILA_CONFIG_PASSWORD_MASK;
   #else
-    root[key] = value;
+    root[key.name] = value;
   #endif // MYCILA_CONFIG_PASSWORD_MASK
   }
 }

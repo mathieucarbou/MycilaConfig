@@ -177,11 +177,7 @@ void loop() {}
   Clear all persisted settings from NVS and cache.
 
 - **`size_t heapUsage() const`**  
-  Returns the total heap memory consumed by the config system, including:
-  - Vector storage for keys (if capacity > 0)
-  - Map structure overhead (red-black tree nodes) for defaults, cache, and validators
-  - Str object structures in maps
-  - Heap-allocated string content (flash strings contribute 0 bytes)
+  Returns the total heap memory consumed by the config system
 
 #### Reading Values
 
