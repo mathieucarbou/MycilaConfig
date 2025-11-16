@@ -206,6 +206,9 @@ namespace Mycila {
       bool restore(const char* data);
       bool restore(const std::map<const char*, std::string>& settings);
 
+      // approximate heap usage by config system (keys, defaults, cached values)
+      size_t heapUsage() const;
+
 #ifdef MYCILA_JSON_SUPPORT
       void toJson(const JsonObject& root);
 #endif

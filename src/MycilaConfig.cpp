@@ -311,6 +311,54 @@ const char* Mycila::Config::keyRef(const char* buffer) const {
   return nullptr;
 }
 
+size_t Mycila::Config::heapUsage() const {
+  size_t total = 0;
+
+  // std::map is implemented as a red-black tree with nodes allocated on heap
+  // Each node contains: 3 pointers (parent, left, right), 1 byte (color), and the key-value pair
+  // The key-value pair is std::pair<const char* const, std::unique_ptr<char[], void(*)(char[])>>
+  // - const char* const: pointer (not counted, points to flash)
+  // - std::unique_ptr: contains pointer + deleter function pointer
+
+  // Red-black tree node overhead (without the payload)
+  static constexpr size_t rbTreeNodeOverhead = 3 * sizeof(void*) + sizeof(char);
+
+  // Size of the pair stored in each node
+  static constexpr size_t pairSize = sizeof(const char*) + sizeof(std::unique_ptr<char[], void (*)(char[])>);
+
+  // Total per map node
+  static constexpr size_t mapNodeSize = rbTreeNodeOverhead + pairSize;
+
+  // defaults map
+  for (const auto& [key, val] : _defaults) {
+    total += mapNodeSize; // map node + pair structure
+    if (!isFlashString(val.get())) {
+      total += strlen(val.get()) + 1; // heap-allocated string content
+    }
+  }
+
+  // cache map
+  for (const auto& [key, val] : _cache) {
+    total += mapNodeSize; // map node + pair structure
+    if (!isFlashString(val.get())) {
+      total += strlen(val.get()) + 1; // heap-allocated string content
+    }
+  }
+
+  // validators map (if any)
+  // Each node: rb-tree overhead + pair<const char*, ConfigValidatorCallback>
+  static constexpr size_t validatorPairSize = sizeof(const char*) + sizeof(ConfigValidatorCallback);
+  total += _validators.size() * (rbTreeNodeOverhead + validatorPairSize);
+
+  // _keys vector: the vector itself has capacity-based allocation
+  // Only counts if capacity > 0 (heap-allocated storage)
+  if (_keys.capacity() > 0) {
+    total += _keys.capacity() * sizeof(const char*);
+  }
+
+  return total;
+}
+
 #ifdef MYCILA_JSON_SUPPORT
 void Mycila::Config::toJson(const JsonObject& root) {
   for (auto& key : _keys) {
