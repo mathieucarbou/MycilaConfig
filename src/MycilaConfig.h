@@ -17,10 +17,10 @@
 #include <utility>
 #include <vector>
 
-#define MYCILA_CONFIG_VERSION          "9.0.3"
-#define MYCILA_CONFIG_VERSION_MAJOR    9
+#define MYCILA_CONFIG_VERSION          "10.0.0"
+#define MYCILA_CONFIG_VERSION_MAJOR    10
 #define MYCILA_CONFIG_VERSION_MINOR    0
-#define MYCILA_CONFIG_VERSION_REVISION 3
+#define MYCILA_CONFIG_VERSION_REVISION 0
 
 // suffix to use for a setting key enabling a feature
 #ifndef MYCILA_CONFIG_KEY_ENABLE_SUFFIX
