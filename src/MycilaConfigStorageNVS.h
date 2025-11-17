@@ -14,10 +14,10 @@
 #include <variant>
 
 namespace Mycila {
-  class NVSStorage : public Config::Storage {
+  class ConfigStorageNVS : public Config::Storage {
     public:
-      NVSStorage() = default;
-      virtual ~NVSStorage() {
+      ConfigStorageNVS() = default;
+      virtual ~ConfigStorageNVS() {
         nvs_close(_handle);
         _handle = 0;
       }

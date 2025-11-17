@@ -3,9 +3,9 @@
  * Copyright (C) 2023-2025 Mathieu Carbou
  */
 #include <MycilaConfig.h>
-#include <MycilaNVSStorage.h>
+#include <MycilaConfigStorageNVS.h>
 
-Mycila::NVSStorage storage;
+Mycila::ConfigStorageNVS storage;
 Mycila::Config config(storage);
 
 unsigned long lastHeapLog = 0;
@@ -211,7 +211,7 @@ void loop() {
     // 40% chance: GET operation
     const auto& keys = config.keys();
     const char* key = keys[random(0, keys.size())].name;
-    const char* value = config.get(key);
+    const char* value = config.getString(key);
     Serial.printf("[GET] %s = %s\n", key, value);
 
   } else if (op < 70) {
@@ -235,7 +235,7 @@ void loop() {
       "time.cloudflare.com",
       "F"};
     int idx = random(0, 8);
-    auto result = config.set(keys[idx], values[idx]);
+    auto result = config.setString(keys[idx], values[idx]);
     Serial.printf("[SET] %s = %s (result: %s)\n",
                   keys[idx],
                   values[idx],

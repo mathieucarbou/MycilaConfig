@@ -94,7 +94,7 @@ void setup() {
   });
 
   // Set configuration values
-  auto result = config.set("wifi_ssid", "MyNetwork");
+  auto result = config.setString("wifi_ssid", "MyNetwork");
   if (result) {
     Serial.println("WiFi SSID saved successfully");
     if (result.isStorageUpdated()) {
@@ -115,7 +115,7 @@ void setup() {
   }
 
   // Get configuration values
-  Serial.printf("SSID: %s\n", config.get("wifi_ssid"));
+  Serial.printf("SSID: %s\n", config.getString("wifi_ssid"));
   bool debug = config.getBool("debug_enable");
   int port = config.getInt("port");
 
@@ -181,11 +181,8 @@ void loop() {}
 
 #### Reading Values
 
-- **`const char* get(const char* key) const`**  
+- **`const char* getString(const char* key) const`**  
   Get the value as a C-string. Returns `nullptr` for unknown keys, otherwise returns the value (stored or default).
-
-- **`std::string getString(const char* key) const`**  
-  Get the value as a `std::string` (returns a copy).
 
 - **`bool getBool(const char* key) const`**  
   Parse value as boolean. Returns true for:
@@ -213,8 +210,8 @@ void loop() {}
 
 #### Writing Values
 
-- **`Result set(const char* key, const std::string& value, bool fireChangeCallback = true)`**  
-- **`Result set(const char* key, const char* value, bool fireChangeCallback = true)`**  
+- **`Result setString(const char* key, const std::string& value, bool fireChangeCallback = true)`**  
+- **`Result setString(const char* key, const char* value, bool fireChangeCallback = true)`**  
   Set a configuration value. Returns an `Result` that converts to `bool` (true = operation successful).
 
 - **`bool set(const std::map<const char*, std::string>& settings, bool fireChangeCallback = true)`**  
@@ -250,7 +247,7 @@ void loop() {}
 **Example:**
 
 ```cpp
-auto res = config.set("key", "value");
+auto res = config.setString("key", "value");
 
 // Simple success check
 if (res) {
@@ -284,7 +281,7 @@ Mycila::Config::Result myFunction() {
   if (error) {
     return Mycila::Config::Status::ERR_UNKNOWN_KEY;
   }
-  return config.set("key", "value");
+  return config.setString("key", "value");
 }
 ```
 
@@ -517,7 +514,7 @@ Mycila::Config config(storage);
 config.begin("MYAPP");
 ```
 
-For a complete reference implementation, see [`src/MycilaNVSStorage.h`](src/MycilaNVSStorage.h).
+For a complete reference implementation, see [`src/MycilaConfigStorageNVS.h`](src/MycilaConfigStorageNVS.h).
 
 ## License
 

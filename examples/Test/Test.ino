@@ -3,10 +3,10 @@
  * Copyright (C) 2023-2025 Mathieu Carbou
  */
 #include <MycilaConfig.h>
-#include <MycilaNVSStorage.h>
+#include <MycilaConfigStorageNVS.h>
 #include <Preferences.h>
 
-Mycila::NVSStorage storage;
+Mycila::ConfigStorageNVS storage;
 Mycila::Config config(storage);
 Preferences prefs;
 
@@ -56,9 +56,9 @@ void setup() {
 
   // tests
 
-  assertEquals(config.get("key1"), MYCILA_CONFIG_VALUE_FALSE);
-  assertEquals(config.get("key2"), "");
-  assertEquals(config.get("key3"), "");
+  assertEquals(config.getString("key1"), MYCILA_CONFIG_VALUE_FALSE);
+  assertEquals(config.getString("key2"), "");
+  assertEquals(config.getString("key3"), "");
 
   // check exists key
   assert(config.configured("key4"));
@@ -70,29 +70,29 @@ void setup() {
   }));
 
   // set key
-  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE));
-  assertEquals(config.get("key1"), MYCILA_CONFIG_VALUE_TRUE);
+  assert(config.setString("key1", MYCILA_CONFIG_VALUE_TRUE));
+  assertEquals(config.getString("key1"), MYCILA_CONFIG_VALUE_TRUE);
   assert(prefs.isKey("key1"));
 
   // set key to same value => no change
-  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Status::PERSISTED);
-  assert(config.set("key1", MYCILA_CONFIG_VALUE_TRUE));
+  assert(config.setString("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Status::PERSISTED);
+  assert(config.setString("key1", MYCILA_CONFIG_VALUE_TRUE));
 
   // cache stored key
-  assertEquals(config.get("key4"), "bar"); // load key and cache
+  assertEquals(config.getString("key4"), "bar"); // load key and cache
 
   // set key to same value => no change
-  assert(config.set("key4", "bar") == Mycila::Config::Status::PERSISTED);
-  assert(config.set("key4", "bar"));
+  assert(config.setString("key4", "bar") == Mycila::Config::Status::PERSISTED);
+  assert(config.setString("key4", "bar"));
 
   // set stored key to default value
-  assert(config.set("key4", "foo"));
-  assertEquals(config.get("key4"), "foo");
+  assert(config.setString("key4", "foo"));
+  assertEquals(config.getString("key4"), "foo");
   assert(prefs.isKey("key4"));
 
   // set stored key to other value
-  assert(config.set("key4", "bar"));
-  assertEquals(config.get("key4"), "bar");
+  assert(config.setString("key4", "bar"));
+  assertEquals(config.getString("key4"), "bar");
 
   // unset global validator
   assert(config.setValidator(nullptr));
@@ -100,12 +100,12 @@ void setup() {
   // unset stored key
   assert(config.unset("key4"));
   assert(!prefs.isKey("key4"));
-  assertEquals(config.get("key4"), "foo");
+  assertEquals(config.getString("key4"), "foo");
 
   // unset non-existing key => noop
   assert(config.unset("key4") == Mycila::Config::Status::REMOVED);
   assert(config.unset("key4"));
-  assertEquals(config.get("key4"), "foo");
+  assertEquals(config.getString("key4"), "foo");
 
   // set validator
   assert(config.setValidator("key4", [](const char* key, const char* newValue) {
@@ -114,34 +114,34 @@ void setup() {
   }));
 
   // try set a permitted value
-  assert(config.set("key4", "baz"));
-  assertEquals(config.get("key4"), "baz");
+  assert(config.setString("key4", "baz"));
+  assertEquals(config.getString("key4"), "baz");
 
   // try set a NOT permitted value
-  assert(config.set("key4", "bar") == Mycila::Config::Status::ERR_INVALID_VALUE);
-  assert(!config.set("key4", "bar"));
-  assertEquals(config.get("key4"), "baz");
+  assert(config.setString("key4", "bar") == Mycila::Config::Status::ERR_INVALID_VALUE);
+  assert(!config.setString("key4", "bar"));
+  assertEquals(config.getString("key4"), "baz");
 
   // unset validator
   assert(config.setValidator("key4", nullptr));
 
   // set un-stored to default value => no change
-  assert(config.set("key5", "baz") == Mycila::Config::Status::DEFAULTED);
-  assert(config.set("key5", "baz"));
+  assert(config.setString("key5", "baz") == Mycila::Config::Status::DEFAULTED);
+  assert(config.setString("key5", "baz"));
 
   // remove an inexisting key
   assert(config.unset("key5") == Mycila::Config::Status::REMOVED);
   assert(config.unset("key5"));
 
   // try set to empty value a key which has a default value
-  assertEquals(config.get("key5"), "baz");
-  assert(config.set("key5", ""));
-  assertEquals(config.get("key5"), "");
+  assertEquals(config.getString("key5"), "baz");
+  assert(config.setString("key5", ""));
+  assertEquals(config.getString("key5"), "");
 
   config.backup(Serial);
 
-  config.set("key1", "value1");
-  config.set("key2", "value2");
+  config.setString("key1", "value1");
+  config.setString("key2", "value2");
   config.unset("key4"); // back to default value
 
   config.unset("key7"); // back to default value, but key was not stored
@@ -170,21 +170,21 @@ void setup() {
   config.restore("key1=\nkey2=\nkey3=value3\nkey4=foo\n");
 
   // key not configured:
-  assert(config.get("key11") == nullptr);
+  assert(config.getString("key11") == nullptr);
 
-  assertEquals(config.get("key1"), "");
-  assertEquals(config.get("key2"), "");
-  assertEquals(config.get("key3"), "value3");
-  assertEquals(config.get("key4"), "foo"); // default value
+  assertEquals(config.getString("key1"), "");
+  assertEquals(config.getString("key2"), "");
+  assertEquals(config.getString("key3"), "value3");
+  assertEquals(config.getString("key4"), "foo"); // default value
 
-  assertEquals(config.get("key6"), "6");
-  config.set("key6", std::to_string(7)); // deleter should be called to delete buffer
-  assertEquals(config.get("key6"), "7");
+  assertEquals(config.getString("key6"), "6");
+  config.setString("key6", std::to_string(7)); // deleter should be called to delete buffer
+  assertEquals(config.getString("key6"), "7");
 
   Serial.printf("Free heap: %" PRIu32 " bytes\n", ESP.getFreeHeap());
   for (size_t i = 0; i < 100; i++) {
-    config.set("key10", "some long string to eat memory: " + std::to_string(i)); // key saved and cache erased => buffer allocation should be freed
-    const char* v = config.get("key10");                                         // key cached
+    config.setString("key10", "some long string to eat memory: " + std::to_string(i)); // key saved and cache erased => buffer allocation should be freed
+    const char* v = config.getString("key10");                                         // key cached
     Serial.printf("key10 = %s\n", v);
   }
   config.unset("key10"); // cache erased

@@ -137,7 +137,7 @@ bool Mycila::Config::setValidator(ConfigValidatorCallback callback) {
 }
 
 bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callback) {
-  Key* k = const_cast<Key*>(this->keyRef(key));
+  Key* k = const_cast<Key*>(this->key(key));
 
   // check if the key is valid
   if (k == nullptr) {
@@ -157,10 +157,15 @@ bool Mycila::Config::setValidator(const char* key, ConfigValidatorCallback callb
 }
 
 bool Mycila::Config::configured(const char* key) const {
-  return this->keyRef(key) != nullptr;
+  return this->key(key) != nullptr;
 }
 
-const Mycila::Config::Key* Mycila::Config::keyRef(const char* buffer) const {
+const char* Mycila::Config::keyRef(const char* buffer) const {
+  const Key* k = this->key(buffer);
+  return k ? k->name : nullptr;
+}
+
+const Mycila::Config::Key* Mycila::Config::key(const char* buffer) const {
   auto it = std::lower_bound(_keys.begin(), _keys.end(), buffer, [](const Key& a, const char* b) { return strcmp(a.name, b) < 0; });
   return it != _keys.end() && strcmp(it->name, buffer) == 0 ? &(*it) : nullptr;
 }
@@ -170,7 +175,7 @@ const Mycila::Config::Result Mycila::Config::set(const char* key, const char* va
     return unset(key, fireChangeCallback);
   }
 
-  const Key* k = this->keyRef(key);
+  const Key* k = this->key(key);
 
   // check if the key is valid
   if (k == nullptr) {
@@ -248,7 +253,7 @@ bool Mycila::Config::getBool(const char* key) const {
 }
 
 const char* Mycila::Config::get(const char* key) const {
-  const Key* k = this->keyRef(key);
+  const Key* k = this->key(key);
 
   // check if key is configured
   if (k == nullptr) {
@@ -279,7 +284,7 @@ const char* Mycila::Config::get(const char* key) const {
 }
 
 Mycila::Config::Result Mycila::Config::unset(const char* key, bool fireChangeCallback) {
-  const Key* k = this->keyRef(key);
+  const Key* k = this->key(key);
 
   // check if the key is valid
   if (k == nullptr) {

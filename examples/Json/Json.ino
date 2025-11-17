@@ -5,13 +5,13 @@
 #include <ArduinoJson.h>
 #include <StreamString.h>
 #include <MycilaConfig.h>
-#include <MycilaNVSStorage.h>
+#include <MycilaConfigStorageNVS.h>
 
 #define KEY_DEBUG_ENABLE "debug_enable"
 #define KEY_WIFI_SSID "wifi_ssid"
 #define KEY_WIFI_PWD "wifi_pwd"
 
-Mycila::NVSStorage storage;
+Mycila::ConfigStorageNVS storage;
 Mycila::Config config(storage);
 
 uint8_t getLogLevel() { return config.getBool(KEY_DEBUG_ENABLE) ? ARDUHAL_LOG_LEVEL_DEBUG : ARDUHAL_LOG_LEVEL_INFO; }
