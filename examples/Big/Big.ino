@@ -26,12 +26,6 @@ void setup() {
 
   Serial.println("\n=== BigConfig Example - 150 Keys ===\n");
 
-  printHeap("Before begin()");
-
-  config.begin("BIGCONFIG");
-
-  printHeap("After begin()");
-
   // Configure 150 keys with various default values
   config.configure("wifi_ssid", "MyNetwork");
   config.configure("wifi_pwd", "secret123");
@@ -183,6 +177,12 @@ void setup() {
   config.configure("auth_pwd2", "user123");
 
   printHeap("After configure()");
+
+  printHeap("Before begin()");
+
+  config.begin("BIGCONFIG", true);
+
+  printHeap("After begin()");
 
   // Register a change listener
   config.listen([](const char* key, const char* newValue) {

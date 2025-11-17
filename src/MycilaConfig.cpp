@@ -83,16 +83,30 @@ inline bool Mycila::Config::Str::inFlash() const {
 }
 
 size_t Mycila::Config::Str::heapUsage() const {
-  return _isFlashString(_buffer) ? 4 : 4 + strlen(_buffer) + 1;
+  return _isFlashString(_buffer) ? 0 : strlen(_buffer) + 1;
 }
 
 ////////////
 // Config //
 ////////////
 
-bool Mycila::Config::begin(const char* name) {
+bool Mycila::Config::begin(const char* name, bool preload) {
   ESP_LOGI(TAG, "Initializing Config System: %s...", name);
-  return _storage->begin(name);
+  if (!_storage->begin(name)) {
+    ESP_LOGE(TAG, "Failed to initialize storage backend!");
+    return false;
+  }
+  if (preload) {
+    ESP_LOGI(TAG, "Preloading Config System: %s...", name);
+    for (auto& key : _keys) {
+      auto value = _storage->loadString(key);
+      if (value.has_value()) {
+        _cache.insert_or_assign(key, std::move(value.value()));
+        ESP_LOGD(TAG, "get(%s): CACHED", key);
+      }
+    }
+  }
+  return true;
 }
 
 bool Mycila::Config::configure(const char* key, const char* defaultValue, ConfigValidatorCallback callback) {
@@ -253,7 +267,7 @@ const char* Mycila::Config::get(const char* key) const {
     return it->second.c_str();
   }
 
-  std::optional<Str> value = _storage->load(key);
+  std::optional<Str> value = _storage->loadString(key);
 
   // real key exists ?
   if (value.has_value()) {

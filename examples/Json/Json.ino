@@ -21,11 +21,11 @@ void setup() {
   while (!Serial)
     continue;
 
-  config.begin();
-
   config.configure(KEY_DEBUG_ENABLE, MYCILA_CONFIG_VALUE_FALSE);
   config.configure(KEY_WIFI_SSID);
   config.configure(KEY_WIFI_PWD);
+
+  config.begin();
 }
 
 void loop() {

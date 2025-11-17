@@ -119,7 +119,7 @@ namespace Mycila {
           virtual std::optional<uint32_t> loadU32(const char* key) const { return std::nullopt; }
           virtual std::optional<int64_t> loadI64(const char* key) const { return std::nullopt; }
           virtual std::optional<uint64_t> loadU64(const char* key) const { return std::nullopt; }
-          virtual std::optional<Str> load(const char* key) const { return std::nullopt; }
+          virtual std::optional<Str> loadString(const char* key) const { return std::nullopt; }
       };
 
       /**
@@ -161,7 +161,7 @@ namespace Mycila {
       bool configure(const char* key, const char* defaultValue = "", ConfigValidatorCallback callback = nullptr);
 
       // starts the config system and returns true if successful
-      bool begin(const char* name = "CONFIG");
+      bool begin(const char* name = "CONFIG", bool preload = false);
 
       // register a callback to be called when a config value changes
       void listen(ConfigChangeCallback callback) { _changeCallback = std::move(callback); }

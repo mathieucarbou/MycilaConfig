@@ -139,7 +139,7 @@ namespace Mycila {
           return value;
         return std::nullopt;
       }
-      std::optional<Config::Str> load(const char* key) const override {
+      std::optional<Config::Str> loadString(const char* key) const override {
         if (!_handle)
           return std::nullopt;
         size_t len = 0;

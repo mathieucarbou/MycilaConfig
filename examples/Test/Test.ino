@@ -39,10 +39,6 @@ void setup() {
     Serial.println("(restored)");
   });
 
-  // begin()
-
-  config.begin();
-
   // configure()
 
   config.configure("key1", MYCILA_CONFIG_VALUE_FALSE);
@@ -53,6 +49,10 @@ void setup() {
   config.configure("key6", std::to_string(6));
   config.configure("key7", "-1");
   config.configure("key10");
+
+  // begin()
+
+  config.begin("CONFIG", true);
 
   // tests
 
