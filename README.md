@@ -10,7 +10,7 @@
 [![GitHub latest commit](https://badgen.net/github/last-commit/mathieucarbou/MycilaConfig)](https://GitHub.com/mathieucarbou/MycilaConfig/commit/)
 [![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/mathieucarbou/MycilaConfig)
 
-A simple, efficient configuration library for ESP32 (Arduino framework) built on top of Preferences (NVS). Provides defaults, caching, typed getters, validators, change/restore callbacks, backup/restore, and optional JSON export with password masking.
+A simple, efficient configuration library for ESP32 (Arduino framework) with pluggable storage backends (NVS included). Provides defaults, caching, typed getters, validators, change/restore callbacks, backup/restore, and optional JSON export with password masking.
 
 ## Features
 
@@ -55,88 +55,39 @@ lib_deps =
 
 ```cpp
 #include <MycilaConfig.h>
+#include <MycilaConfigStorageNVS.h>
 
-Mycila::Config config;
+Mycila::ConfigStorageNVS storage;
+Mycila::Config config(storage);
 
 void setup() {
   Serial.begin(115200);
 
   // Declare configuration keys with optional default values
   // Key names must be ≤ 15 characters
-  config.configure("debug_enable", "false");
+  config.configure("debug_enable", MYCILA_CONFIG_VALUE_FALSE);
   config.configure("wifi_ssid");
   config.configure("wifi_pwd");
   config.configure("port", "80");
-  
-  // Initialize the config system with NVS namespace
-  config.begin("CONFIG");
-  
-  // Register change callback
-  config.listen([](const char* key, const char* newValue) {
-    Serial.printf("Config changed: %s = %s\n", key, newValue);
-  });
 
-  // Listen to configuration restore events
-  config.listen([]() {
-    Serial.println("Configuration restored!");
-  });
-
-  // Set a global validator (optional)
-  config.setValidator([](const char* key, const char* value) {
-    // Example: limit all values to 64 characters
-    return strlen(value) <= 64;
-  });
-
-  // Set a per-key validator with configure()
-  config.configure("port", "80", [](const char* key, const char* value) {
-    int port = atoi(value);
-    return port > 0 && port < 65536;
-  });
-
-  // Set configuration values
-  auto result = config.setString("wifi_ssid", "MyNetwork");
-  if (result) {
-    Serial.println("WiFi SSID saved successfully");
-    if (result.isStorageUpdated()) {
-      Serial.println("Value was written to NVS storage");
-    }
-  } else {
-    // Check detailed result
-    switch ((Mycila::Config::Status)result) {
-      case Mycila::Config::Status::ERR_INVALID_VALUE:
-        Serial.println("Invalid value rejected by validator");
-        break;
-      case Mycila::Config::Status::ERR_UNKNOWN_KEY:
-        Serial.println("Key not configured");
-        break;
-      default:
-        break;
-    }
-  }
-
-  // Get configuration values
-  Serial.printf("SSID: %s\n", config.getString("wifi_ssid"));
-  bool debug = config.getBool("debug_enable");
-  int port = config.getInt("port");
-
-  // Check if value is empty or equals something
-  if (config.isEmpty("wifi_pwd")) {
-    Serial.println("Password not set");
-  }
-  if (config.isEqual("debug_enable", "true")) {
-    Serial.println("Debug mode enabled");
-  }
-  
-  // Check memory usage
-  Serial.printf("Config heap usage: %d bytes\n", config.heapUsage());
+  config.begin("MYAPP", true); // Preload all values
 }
-
-void loop() {}
 ```
 
 ## API Reference
 
 ### Class: `Mycila::Config`
+
+#### Constructor
+
+- **`Config(Storage& storage)`**  
+  Create a Config instance with the specified storage backend. The storage reference must remain valid for the lifetime of the Config object.
+  
+  **Example:**
+  ```cpp
+  Mycila::ConfigStorageNVS storage;
+  Mycila::Config config(storage);
+  ```
 
 #### Setup and Storage
 
@@ -161,7 +112,7 @@ void loop() {}
 
 - **`bool configure(const char* key, const std::string& defaultValue, ConfigValidatorCallback validator = nullptr)`**  
 - **`bool configure(const char* key, const char* defaultValue = "", ConfigValidatorCallback validator = nullptr)`**  
-  Register a configuration key with an optional default value and validator. Key must be ≤ 15 characters. Returns false if the key is invalid or already exists.
+  Register a configuration key with an optional default value and validator. Key must be ≤ 15 characters. Returns true if the key was successfully registered, false otherwise (e.g., key too long).
   
   **Default value handling:**
   - `const char*`: Stored as pointer (zero copy if in flash/ROM)
@@ -177,7 +128,12 @@ void loop() {}
   Clear all persisted settings from NVS and cache.
 
 - **`size_t heapUsage() const`**  
-  Returns the total heap memory consumed by the config system
+  Returns the total heap memory consumed by the config system, including:
+  - Vector storage for Key objects (capacity × sizeof(Key))
+  - Heap usage from default values embedded in Key objects
+  - Map structure overhead (red-black tree nodes) for cache and validators
+  - Str object structures in maps
+  - Heap-allocated string content (flash strings contribute 0 bytes)
 
 #### Reading Values
 
@@ -235,7 +191,7 @@ void loop() {}
 
 **Success codes** (converts to `true`):
 - `PERSISTED` — Value changed and written to NVS
-- `DEFAULTED` — Value equals default, removed from NVS or not stored
+- `DEFAULTED` — Value equals default, not stored
 - `REMOVED` — Key successfully removed from NVS
 
 **Error codes** (converts to `false`):
@@ -325,11 +281,17 @@ config.configure("port", "80", [](const char* key, const char* value) {
 
 #### Utilities
 
-- **`const std::vector<const char*>& keys() const`**  
-  Get a sorted vector of all registered configuration key names.
+- **`const std::vector<Key>& keys() const`**  
+  Get a sorted vector of all registered configuration keys. Each `Key` contains `name` (const char*) and `defaultValue` (Str).
 
 - **`const char* keyRef(const char* buffer) const`**  
   Given a string buffer, return the canonical key pointer if it matches a registered key (useful for pointer comparisons). Returns `nullptr` if not found.
+
+- **`const Key* key(const char* buffer) const`**  
+  Given a string buffer, return a pointer to the Key object if it matches a registered key. Returns `nullptr` if not found.
+
+- **`bool isPasswordKey(const char* key) const`**
+  Given a string buffer, return a pointer to the Key object if it matches a registered key. Returns `nullptr` if not found.
 
 - **`bool isPasswordKey(const char* key) const`**  
   Returns true if key ends with `MYCILA_CONFIG_KEY_PASSWORD_SUFFIX` (default: `"_pwd"`).
@@ -443,22 +405,30 @@ Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
 
 ## Examples
 
-### Basic Configuration
-See [`examples/Config/Config.ino`](examples/Config/Config.ino) for a complete example demonstrating:
+### Test Example
+
+See [`examples/Test/Test.ino`](examples/Test/Test.ino) for a complete example demonstrating:
+
 - Setting up keys and defaults
-- Using validators
+- Using global and per-key validators
 - Setting and getting values
-- Checking Result codes
-- Backup and restore
+- Checking Result codes and Status enum
+- Backup and restore functionality
+- Change and restore callbacks
 
 ### JSON Export
-See [`examples/ConfigJson/ConfigJson.ino`](examples/ConfigJson/ConfigJson.ino) for:
+
+See [`examples/Json/Json.ino`](examples/Json/Json.ino) for:
+
 - JSON export with `toJson()`
-- Password masking
+- Backup to string with `backup()`
 - Integration with ArduinoJson
+- Toggling configuration values
 
 ### Large Configuration
+
 See [`examples/Big/Big.ino`](examples/Big/Big.ino) for:
+
 - Managing 150+ configuration keys
 - Heap usage monitoring
 - Random operations stress test
@@ -466,7 +436,7 @@ See [`examples/Big/Big.ino`](examples/Big/Big.ino) for:
 
 ## Custom Storage Backend
 
-You can implement custom storage backends by inheriting from `Config::Storage`:
+You can implement custom storage backends by inheriting from `Mycila::Config::Storage`:
 
 ```cpp
 class MyCustomStorage : public Mycila::Config::Storage {
@@ -505,7 +475,7 @@ class MyCustomStorage : public Mycila::Config::Storage {
     // Optional: Implement typed load/store methods for better performance
     std::optional<int32_t> loadI32(const char* key) const override { return std::nullopt; }
     bool storeI32(const char* key, int32_t value) override { return false; }
-    // ... other typed methods
+    // ... other typed methods (loadBool, loadFloat, etc.)
 };
 
 // Usage
@@ -514,7 +484,10 @@ Mycila::Config config(storage);
 config.begin("MYAPP");
 ```
 
-For a complete reference implementation, see [`src/MycilaConfigStorageNVS.h`](src/MycilaConfigStorageNVS.h).
+For a complete reference implementation, see the included NVS storage backend:
+
+- Header: [`src/MycilaConfigStorageNVS.h`](src/MycilaConfigStorageNVS.h)
+- Implementation: [`src/MycilaConfigStorageNVS.cpp`](src/MycilaConfigStorageNVS.cpp)
 
 ## License
 
