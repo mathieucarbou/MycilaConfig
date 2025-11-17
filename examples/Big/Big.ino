@@ -2,6 +2,9 @@
 /*
  * Copyright (C) 2023-2025 Mathieu Carbou
  */
+#include <Esp.h>
+#include <HardwareSerial.h>
+
 #include <MycilaConfig.h>
 #include <MycilaConfigStorageNVS.h>
 
@@ -180,13 +183,13 @@ void setup() {
 
   printHeap("Before begin()");
 
-  config.begin("BIGCONFIG", true);
+  config.begin("Big.ino", true);
 
   printHeap("After begin()");
 
   // Register a change listener
-  config.listen([](const char* key, const char* newValue) {
-    Serial.printf("[CHANGE] %s = %s\n", key, newValue);
+  config.listen([](const char* key, const Mycila::Config::Value& newValue) {
+    Serial.printf("[CHANGE] %s = %s\n", key, Mycila::Config::toString(newValue).c_str());
   });
 
   Serial.println("\n=== Configuration Complete ===");
@@ -253,7 +256,7 @@ void loop() {
       "log_enable"};
     const char* key = keys[random(0, 7)];
     bool value = random(0, 2);
-    config.setBool(key, value);
+    config.setString(key, value ? MYCILA_CONFIG_VALUE_TRUE : MYCILA_CONFIG_VALUE_FALSE);
     Serial.printf("[SET_BOOL] %s = %s\n", key, value ? "true" : "false");
 
   } else {

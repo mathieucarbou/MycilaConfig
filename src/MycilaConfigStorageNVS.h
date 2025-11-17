@@ -17,10 +17,7 @@ namespace Mycila {
   class ConfigStorageNVS : public Config::Storage {
     public:
       ConfigStorageNVS() = default;
-      virtual ~ConfigStorageNVS() {
-        nvs_close(_handle);
-        _handle = 0;
-      }
+      virtual ~ConfigStorageNVS() { end(); }
 
       bool begin(const char* name) override {
         if (_handle)
@@ -30,6 +27,13 @@ namespace Mycila {
           return false;
         }
         return true;
+      }
+
+      void end() override {
+        if (_handle) {
+          nvs_close(_handle);
+          _handle = 0;
+        }
       }
 
       // Note: this call is very inefficient as it tries to read all possible types
@@ -59,8 +63,8 @@ namespace Mycila {
 
       bool removeAll() override { return _handle && nvs_erase_all(_handle) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
       bool storeBool(const char* key, bool value) override { return _handle && nvs_set_u8(_handle, key, value ? 1 : 0) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
-      bool storeFloat(const char* key, float_t value) override { return _handle && nvs_set_blob(_handle, key, &value, sizeof(float_t)) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
-      bool storeDouble(const char* key, double_t value) override { return _handle && nvs_set_blob(_handle, key, &value, sizeof(double_t)) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
+      bool storeFloat(const char* key, float value) override { return _handle && nvs_set_blob(_handle, key, &value, sizeof(float)) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
+      bool storeDouble(const char* key, double value) override { return _handle && nvs_set_blob(_handle, key, &value, sizeof(double)) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
       bool storeI8(const char* key, int8_t value) override { return _handle && nvs_set_i8(_handle, key, value) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
       bool storeU8(const char* key, uint8_t value) override { return _handle && nvs_set_u8(_handle, key, value) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
       bool storeI16(const char* key, int16_t value) override { return _handle && nvs_set_i16(_handle, key, value) == ESP_OK && nvs_commit(_handle) == ESP_OK; }
@@ -78,16 +82,16 @@ namespace Mycila {
         return std::nullopt;
       }
       std::optional<float> loadFloat(const char* key) const override {
-        float_t value;
-        size_t len = sizeof(float_t);
-        if (_handle && nvs_get_blob(_handle, key, &value, &len) == ESP_OK && len == sizeof(float_t))
+        float value;
+        size_t len = sizeof(float);
+        if (_handle && nvs_get_blob(_handle, key, &value, &len) == ESP_OK && len == sizeof(float))
           return value;
         return std::nullopt;
       }
       std::optional<double> loadDouble(const char* key) const override {
-        double_t value;
-        size_t len = sizeof(double_t);
-        if (_handle && nvs_get_blob(_handle, key, &value, &len) == ESP_OK && len == sizeof(double_t))
+        double value;
+        size_t len = sizeof(double);
+        if (_handle && nvs_get_blob(_handle, key, &value, &len) == ESP_OK && len == sizeof(double))
           return value;
         return std::nullopt;
       }

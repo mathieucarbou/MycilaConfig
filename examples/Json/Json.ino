@@ -4,6 +4,7 @@
  */
 #include <ArduinoJson.h>
 #include <StreamString.h>
+
 #include <MycilaConfig.h>
 #include <MycilaConfigStorageNVS.h>
 
@@ -14,7 +15,7 @@
 Mycila::ConfigStorageNVS storage;
 Mycila::Config config(storage);
 
-uint8_t getLogLevel() { return config.getBool(KEY_DEBUG_ENABLE) ? ARDUHAL_LOG_LEVEL_DEBUG : ARDUHAL_LOG_LEVEL_INFO; }
+uint8_t getLogLevel() { return config.get<bool>(KEY_DEBUG_ENABLE) ? ARDUHAL_LOG_LEVEL_DEBUG : ARDUHAL_LOG_LEVEL_INFO; }
 
 void setup() {
   Serial.begin(115200);
@@ -25,7 +26,7 @@ void setup() {
   config.configure(KEY_WIFI_SSID);
   config.configure(KEY_WIFI_PWD);
 
-  config.begin();
+  config.begin("Json.ino");
 }
 
 void loop() {
@@ -41,7 +42,7 @@ void loop() {
 
   assert(getLogLevel() == ARDUHAL_LOG_LEVEL_INFO);
 
-  config.setBool(KEY_DEBUG_ENABLE, !config.getBool(KEY_DEBUG_ENABLE));
+  config.set<bool>(KEY_DEBUG_ENABLE, !config.get<bool>(KEY_DEBUG_ENABLE));
 
   assert(getLogLevel() == ARDUHAL_LOG_LEVEL_DEBUG);
 

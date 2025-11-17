@@ -41,12 +41,11 @@ jobs:
             src
 
   platformio:
-    name: "pio:${{ matrix.env }}:${{ matrix.board }}"
+    name: "pio:${{ matrix.board }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        env: ["ci-arduino-3"]
         board: [
             "denky_d4",
             "esp32-c3-devkitc-02",
@@ -91,11 +90,49 @@ jobs:
           pip install --upgrade cryptography
           pip install --upgrade intelhex
 
-      - name: Build Examples
+      - name: Test
+        run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
+
+      - name: Big
+        run: PLATFORMIO_SRC_DIR=examples/Big PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
+
+  specials:
+    name: "pio:${{ matrix.board }} (specials)"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        board: ["esp32dev"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-pio
+          path: |
+            ~/.cache/pip
+            ~/.platformio
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Build
         run: |
-          for i in `ls examples`; do
-            echo "============================================================="
-            echo "Building examples/$i..."
-            echo "============================================================="
-            PLATFORMIO_SRC_DIR=examples/$i PIO_BOARD=${{ matrix.board }} pio run -e ${{ matrix.env }}
-          done
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+          pip install --upgrade cryptography
+          pip install --upgrade intelhex
+
+      - name: Json
+        run: PLATFORMIO_SRC_DIR=examples/Big PIO_BOARD=${{ matrix.board }} pio run -e ci-json
+
+      - name: Test (no-ext-bool)
+        run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-no-ext-bool
+
+      - name: Test (64bits)
+        run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-num64bits
