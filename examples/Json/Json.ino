@@ -3,17 +3,17 @@
  * Copyright (C) 2023-2025 Mathieu Carbou
  */
 #include <ArduinoJson.h>
-#include <StreamString.h>
+#include <HardwareSerial.h>
 
 #include <MycilaConfig.h>
 #include <MycilaConfigStorageNVS.h>
 
 #define KEY_DEBUG_ENABLE "debug_enable"
-#define KEY_WIFI_SSID "wifi_ssid"
-#define KEY_WIFI_PWD "wifi_pwd"
+#define KEY_WIFI_SSID    "wifi_ssid"
+#define KEY_WIFI_PWD     "wifi_pwd"
 
-Mycila::ConfigStorageNVS storage;
-Mycila::Config config(storage);
+Mycila::config::NVS storage;
+Mycila::config::Config config(storage);
 
 uint8_t getLogLevel() { return config.get<bool>(KEY_DEBUG_ENABLE) ? ARDUHAL_LOG_LEVEL_DEBUG : ARDUHAL_LOG_LEVEL_INFO; }
 
@@ -22,29 +22,37 @@ void setup() {
   while (!Serial)
     continue;
 
-  config.configure(KEY_DEBUG_ENABLE, MYCILA_CONFIG_VALUE_FALSE);
+  // just to clear storage before the test
+  storage.begin("Json.ino");
+  storage.removeAll();
+  storage.end();
+
+  config.configure(KEY_DEBUG_ENABLE, false);
+  config.configure("a int", 3);
+  config.configure("a float", 3.3f);
   config.configure(KEY_WIFI_SSID);
   config.configure(KEY_WIFI_PWD);
 
   config.begin("Json.ino");
-}
 
-void loop() {
   JsonDocument doc;
   config.toJson(doc.to<JsonObject>());
   serializeJson(doc, Serial);
   Serial.println();
 
-  StreamString content;
-  content.reserve(1024);
-  config.backup(content);
-  Serial.println(content);
+  config.backup(Serial);
 
   assert(getLogLevel() == ARDUHAL_LOG_LEVEL_INFO);
 
-  config.set<bool>(KEY_DEBUG_ENABLE, !config.get<bool>(KEY_DEBUG_ENABLE));
+  config.set<bool>(KEY_DEBUG_ENABLE, true);
 
   assert(getLogLevel() == ARDUHAL_LOG_LEVEL_DEBUG);
+  doc.clear();
+  config.toJson(doc.to<JsonObject>());
+  serializeJson(doc, Serial);
+  Serial.println();
+}
 
-  delay(5000);
+void loop() {
+  vTaskDelete(NULL);
 }

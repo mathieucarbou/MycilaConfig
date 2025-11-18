@@ -8,8 +8,8 @@
 #include <MycilaConfig.h>
 #include <MycilaConfigStorageNVS.h>
 
-Mycila::ConfigStorageNVS storage;
-Mycila::Config config(storage);
+Mycila::config::NVS storage;
+Mycila::config::Config config(storage);
 
 unsigned long lastHeapLog = 0;
 unsigned long operationCount = 0;
@@ -188,8 +188,9 @@ void setup() {
   printHeap("After begin()");
 
   // Register a change listener
-  config.listen([](const char* key, const Mycila::Config::Value& newValue) {
-    Serial.printf("[CHANGE] %s = %s\n", key, Mycila::Config::toString(newValue).c_str());
+  config.listen([](const char* key, const std::optional<Mycila::config::Value>& newValue) {
+    if (newValue.has_value())
+      Serial.printf("[CHANGE] %s = %s\n", key, Mycila::config::toString(newValue.value()).c_str());
   });
 
   Serial.println("\n=== Configuration Complete ===");

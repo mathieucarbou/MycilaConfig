@@ -8,8 +8,8 @@
 #include <MycilaConfig.h>
 #include <MycilaConfigStorageNVS.h>
 
-Mycila::ConfigStorageNVS storage;
-Mycila::Config config(storage);
+Mycila::config::NVS storage;
+Mycila::config::Config config(storage);
 
 static void assertEquals(const char* actual, const char* expected) {
   if (strcmp(actual, expected) != 0) {
@@ -31,8 +31,9 @@ void setup() {
 
   // listeners
 
-  config.listen([](const char* key, const Mycila::Config::Value& newValue) {
-    Serial.printf("(listen) '%s' => '%s'\n", key, Mycila::Config::toString(newValue).c_str());
+  config.listen([](const char* key, const std::optional<Mycila::config::Value>& newValue) {
+    if (newValue.has_value())
+      Serial.printf("(listen) '%s' => '%s'\n", key, Mycila::config::toString(newValue.value()).c_str());
   });
 
   config.listen([]() {
@@ -63,8 +64,8 @@ void setup() {
   assert(config.configured("key4"));
 
   // set global validator
-  assert(config.setValidator([](const char* key, const Mycila::Config::Value& newValue) {
-    Serial.printf("(global validator) '%s' => '%s'\n", key, Mycila::Config::toString(newValue).c_str());
+  assert(config.setValidator([](const char* key, const Mycila::config::Value& newValue) {
+    Serial.printf("(global validator) '%s' => '%s'\n", key, Mycila::config::toString(newValue).c_str());
     return true;
   }));
 
@@ -74,14 +75,14 @@ void setup() {
   assert(storage.hasKey("key1"));
 
   // set key to same value => no change
-  assert(config.setString("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::Config::Status::PERSISTED);
+  assert(config.setString("key1", MYCILA_CONFIG_VALUE_TRUE) == Mycila::config::Status::PERSISTED);
   assert(config.setString("key1", MYCILA_CONFIG_VALUE_TRUE));
 
   // cache stored key
   assertEquals(config.getString("key4"), "bar"); // load key and cache
 
   // set key to same value => no change
-  assert(config.setString("key4", "bar") == Mycila::Config::Status::PERSISTED);
+  assert(config.setString("key4", "bar") == Mycila::config::Status::PERSISTED);
   assert(config.setString("key4", "bar"));
 
   // set stored key to default value
@@ -102,14 +103,14 @@ void setup() {
   assertEquals(config.getString("key4"), "foo");
 
   // unset non-existing key => noop
-  assert(config.unset("key4") == Mycila::Config::Status::REMOVED);
+  assert(config.unset("key4") == Mycila::config::Status::REMOVED);
   assert(config.unset("key4"));
   assertEquals(config.getString("key4"), "foo");
 
   // set validator
-  assert(config.setValidator("key4", [](const char* key, const Mycila::Config::Value& newValue) {
-    Serial.printf("(validator) '%s' => '%s'\n", key, Mycila::Config::toString(newValue).c_str());
-    return std::holds_alternative<Mycila::Config::Str>(newValue) && std::get<Mycila::Config::Str>(newValue) == "baz";
+  assert(config.setValidator("key4", [](const char* key, const Mycila::config::Value& newValue) {
+    Serial.printf("(validator) '%s' => '%s'\n", key, Mycila::config::toString(newValue).c_str());
+    return std::holds_alternative<Mycila::config::Str>(newValue) && std::get<Mycila::config::Str>(newValue) == "baz";
   }));
 
   // try set a permitted value
@@ -117,7 +118,7 @@ void setup() {
   assertEquals(config.getString("key4"), "baz");
 
   // try set a NOT permitted value
-  assert(config.setString("key4", "bar") == Mycila::Config::Status::ERR_INVALID_VALUE);
+  assert(config.setString("key4", "bar") == Mycila::config::Status::ERR_INVALID_VALUE);
   assert(!config.setString("key4", "bar"));
   assertEquals(config.getString("key4"), "baz");
 
@@ -125,11 +126,11 @@ void setup() {
   assert(config.setValidator("key4", nullptr));
 
   // set un-stored to default value => no change
-  assert(config.setString("key5", "baz") == Mycila::Config::Status::DEFAULTED);
+  assert(config.setString("key5", "baz") == Mycila::config::Status::DEFAULTED);
   assert(config.setString("key5", "baz"));
 
   // remove an inexisting key
-  assert(config.unset("key5") == Mycila::Config::Status::REMOVED);
+  assert(config.unset("key5") == Mycila::config::Status::REMOVED);
   assert(config.unset("key5"));
 
   // try set to empty value a key which has a default value

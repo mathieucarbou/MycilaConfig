@@ -9,8 +9,8 @@
 #include <MycilaConfig.h>
 #include <MycilaConfigStorageNVS.h>
 
-Mycila::ConfigStorageNVS storage;
-Mycila::Config config(storage);
+Mycila::config::NVS storage;
+Mycila::config::Config config(storage);
 
 void setup() {
   Serial.begin(115200);
@@ -179,32 +179,32 @@ void setup() {
   // Test type safety - setting wrong type should fail
   // Serial.println("\n=== Testing Type Safety ===");
   // auto result = config.set("bool_key", static_cast<int32_t>(42));
-  // assert(result == Mycila::Config::Status::ERR_INVALID_TYPE);
+  // assert(result == Mycila::config::Status::ERR_INVALID_TYPE);
   // Serial.println("✓ Type mismatch correctly rejected");
 
   // Test validators
   Serial.println("\n=== Testing Validators ===");
-  config.configure("validated_int", 50, [](const char* key, const Mycila::Config::Value& value) {
+  config.configure("validated_int", 50, [](const char* key, const Mycila::config::Value& value) {
     return std::get<int>(value) >= 0 && std::get<int>(value) <= 100;
   });
 
-  assert(config.set<int>("validated_int", 75) == Mycila::Config::Status::PERSISTED);
+  assert(config.set<int>("validated_int", 75) == Mycila::config::Status::PERSISTED);
   assert(config.get<int>("validated_int") == 75);
 
-  assert(config.set<int>("validated_int", 150) == Mycila::Config::Status::ERR_INVALID_VALUE);
+  assert(config.set<int>("validated_int", 150) == Mycila::config::Status::ERR_INVALID_VALUE);
   assert(config.get<int>("validated_int") == 75); // Should remain unchanged
 
-  assert(config.set<int>("validated_int", -10) == Mycila::Config::Status::ERR_INVALID_VALUE);
+  assert(config.set<int>("validated_int", -10) == Mycila::config::Status::ERR_INVALID_VALUE);
   assert(config.get<int>("validated_int") == 75);
   Serial.println("✓ Validator tests passed");
 
   // Test batch operations
   Serial.println("\n=== Testing Batch Operations ===");
-  std::map<const char*, Mycila::Config::Value> batch = {
+  std::map<const char*, Mycila::config::Value> batch = {
     {"bool_key", true},
     {"int32_key", static_cast<int32_t>(999999)},
     {"float_key", 1.41421f},
-    {"str_key", Mycila::Config::Str("Batch Update")}};
+    {"str_key", Mycila::config::Str("Batch Update")}};
 
   assert(config.set(batch));
   assert(config.get<bool>("bool_key") == true);
