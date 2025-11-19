@@ -126,7 +126,7 @@ To ease migration from v10, a **deprecated compatibility wrapper** is provided t
 
 ```cpp
 #include <MycilaConfig.h>
-#include <MycilaConfigDeprecated.h>
+#include <MycilaConfigV10.h>
 #include <MycilaConfigStorageNVS.h>
 
 Mycila::config::NVS storage;
@@ -162,7 +162,7 @@ void setup() {
 
 **Migration path:**
 
-1. **Immediate compatibility**: Include `MycilaConfigDeprecated.h` and use `ConfigV10` wrapper - no code changes needed
+1. **Immediate compatibility**: Include `MycilaConfigV10.h` and use `ConfigV10` wrapper - no code changes needed
 2. **Gradual migration**: Start using new typed API alongside deprecated API
 3. **Full migration**: Remove deprecated wrapper and update to new API
 

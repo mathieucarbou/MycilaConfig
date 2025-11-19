@@ -4,8 +4,6 @@
  */
 #pragma once
 
-#warning ("MycilaConfigDeprecated.h is deprecated and will be removed in future versions. Please use MycilaConfig.h instead.") // NOLINT
-
 #include "./config/Config.h"
 #include "./config/Defines.h"
 #include "./config/Key.h"
@@ -14,4 +12,4 @@
 #include "./config/Str.h"
 #include "./config/Value.h"
 
-#include "./migration/ConfigV10.h"
+#include "./compat/ConfigV10.h"
