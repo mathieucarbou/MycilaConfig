@@ -219,11 +219,100 @@ void setup() {
   assert(config.get<unsigned long>("ulong_key") < millis());
   Serial.println("✓ Custom type tests passed");
 
-  Serial.println("\n=== Testing get Value ===");
-  Mycila::config::Value v = config.get<Mycila::config::Value>("bool_key");
-  assert(std::holds_alternative<bool>(v));
-  assert(std::get<bool>(v) == true);
+  Serial.println("\n=== Testing get template ===");
+  const auto& valueRef = config.get<Mycila::config::Value>("bool_key");
+  assert(std::holds_alternative<bool>(valueRef));
+  assert(std::get<bool>(valueRef) == true);
+  assert(strcmp(config.get<const char*>("str_key"), "Batch Update") == 0);
+  assert(config.get<std::string>("str_key") == "Batch Update");
   Serial.println("✓ get<Value> test passed");
+
+  Serial.println("\n=== Testing as template ===");
+  Mycila::config::Value val1 = true;
+  assert(val1.as<bool>() == true);
+  Mycila::config::Value val2 = static_cast<int32_t>(42);
+  assert(val2.as<int32_t>() == 42);
+  Mycila::config::Value val3 = 3.14f;
+  assert(abs(val3.as<float>() - 3.14f) < 0.00001f);
+  Mycila::config::Value val4 = Mycila::config::Str("Test String");
+  assert(val4.as<Mycila::config::Str>() == "Test String");
+  assert(strcmp(val4.as<const char*>(), "Test String") == 0);
+  assert(val4.as<std::string>() == "Test String");
+  Serial.println("✓ as<T>() tests passed");
+
+  Serial.println("\n=== Testing Value.toString() ===");
+  assert(Mycila::config::Value(true).toString() == MYCILA_CONFIG_VALUE_TRUE);
+  assert(Mycila::config::Value(false).toString() == MYCILA_CONFIG_VALUE_FALSE);
+  assert(Mycila::config::Value(static_cast<int8_t>(-42)).toString() == "-42");
+  assert(Mycila::config::Value(static_cast<uint8_t>(255)).toString() == "255");
+  assert(Mycila::config::Value(static_cast<int32_t>(12345)).toString() == "12345");
+  assert(Mycila::config::Value(static_cast<uint32_t>(67890)).toString() == "67890");
+  assert(Mycila::config::Value(3.14159f).toString().substr(0, 4) == "3.14");
+  assert(Mycila::config::Value(Mycila::config::Str("Hello")).toString() == "Hello");
+  Serial.println("✓ toString() tests passed");
+
+  Serial.println("\n=== Testing Value::fromString() ===");
+  // Boolean parsing
+  auto boolVal1 = Mycila::config::Value::fromString(MYCILA_CONFIG_VALUE_TRUE, Mycila::config::Value(false));
+  assert(boolVal1.has_value() && std::get<bool>(boolVal1.value()) == true);
+
+  auto boolVal2 = Mycila::config::Value::fromString(MYCILA_CONFIG_VALUE_FALSE, Mycila::config::Value(true));
+  assert(boolVal2.has_value() && std::get<bool>(boolVal2.value()) == false);
+
+  // Integer parsing
+  auto intVal = Mycila::config::Value::fromString("12345", Mycila::config::Value(static_cast<int32_t>(0)));
+  assert(intVal.has_value() && std::get<int32_t>(intVal.value()) == 12345);
+
+  auto int8Val = Mycila::config::Value::fromString("-42", Mycila::config::Value(static_cast<int8_t>(0)));
+  assert(int8Val.has_value() && std::get<int8_t>(int8Val.value()) == -42);
+
+  auto uint8Val = Mycila::config::Value::fromString("255", Mycila::config::Value(static_cast<uint8_t>(0)));
+  assert(uint8Val.has_value() && std::get<uint8_t>(uint8Val.value()) == 255);
+
+  auto uint32Val = Mycila::config::Value::fromString("4294967295", Mycila::config::Value(static_cast<uint32_t>(0)));
+  assert(uint32Val.has_value() && std::get<uint32_t>(uint32Val.value()) == 4294967295UL);
+
+  // Float parsing
+  auto floatVal = Mycila::config::Value::fromString("3.14", Mycila::config::Value(0.0f));
+  assert(floatVal.has_value() && abs(std::get<float>(floatVal.value()) - 3.14f) < 0.01f);
+
+#if MYCILA_CONFIG_USE_DOUBLE
+  // Double parsing
+  auto doubleVal = Mycila::config::Value::fromString("2.718281828", Mycila::config::Value(0.0));
+  assert(doubleVal.has_value() && abs(std::get<double>(doubleVal.value()) - 2.718281828) < 0.000000001);
+#endif
+
+  // String parsing
+  auto strVal = Mycila::config::Value::fromString("Hello World", Mycila::config::Value(Mycila::config::Str("")));
+  assert(strVal.has_value() && strcmp(std::get<Mycila::config::Str>(strVal.value()).c_str(), "Hello World") == 0);
+
+  // Invalid parsing
+  auto invalidInt = Mycila::config::Value::fromString("not_a_number", Mycila::config::Value(static_cast<int32_t>(999)));
+  assert(!invalidInt.has_value());
+
+  auto invalidFloat = Mycila::config::Value::fromString("abc", Mycila::config::Value(1.23f));
+  assert(!invalidFloat.has_value());
+
+  Serial.println("✓ fromString() tests passed");
+
+  Serial.println("\n=== Testing Round-trip Conversion ===");
+  // Test that toString() and fromString() are inverses
+  Mycila::config::Value original1(true);
+  auto str1 = original1.toString();
+  auto parsed1 = Mycila::config::Value::fromString(str1.c_str(), Mycila::config::Value(false));
+  assert(parsed1.has_value() && std::get<bool>(parsed1.value()) == true);
+
+  Mycila::config::Value original2(static_cast<int32_t>(42));
+  auto str2 = original2.toString();
+  auto parsed2 = Mycila::config::Value::fromString(str2.c_str(), Mycila::config::Value(static_cast<int32_t>(0)));
+  assert(parsed2.has_value() && std::get<int32_t>(parsed2.value()) == 42);
+
+  Mycila::config::Value original3(Mycila::config::Str("Test"));
+  auto str3 = original3.toString();
+  auto parsed3 = Mycila::config::Value::fromString(str3.c_str(), Mycila::config::Value(Mycila::config::Str("")));
+  assert(parsed3.has_value() && strcmp(std::get<Mycila::config::Str>(parsed3.value()).c_str(), "Test") == 0);
+
+  Serial.println("✓ Round-trip conversion tests passed");
 
   Serial.println("\n=== All Tests Passed! ===");
   Serial.printf("\nHeap usage: %zu bytes\n", config.heapUsage());

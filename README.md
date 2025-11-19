@@ -406,7 +406,7 @@ Mycila::config::Result myFunction() {
 
   ```cpp
   config.listen([](const char* key, const Mycila::config::Value& newValue) {
-      Serial.printf("Key '%s' changed to: %s\n", key, Mycila::config::toString(newValue).c_str());
+      Serial.printf("Key '%s' changed to: %s\n", key, newValue.toString().c_str());
 
       // Type-specific handling
       if (std::holds_alternative<bool>(newValue.value())) {
@@ -472,8 +472,7 @@ config.configure("temperature", 25.0f, [](const char* key, const Mycila::config:
 
   ```cpp
   for (const auto& key : config.keys()) {
-    Serial.printf("%s = %s\n", key.name,
-                  Mycila::config::toString(key.defaultValue).c_str());
+    Serial.printf("%s = %s\n", key.name, key.defaultValue.toString().c_str());
   }
   ```
 

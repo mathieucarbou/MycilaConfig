@@ -190,7 +190,7 @@ void setup() {
   // Register a change listener
   config.listen([](const char* key, const std::optional<Mycila::config::Value>& newValue) {
     if (newValue.has_value()) {
-      Serial.printf("[CHANGE] %s = %s\n", key, Mycila::config::toString(newValue.value()).c_str());
+      Serial.printf("[CHANGE] %s = %s\n", key, newValue.value().toString().c_str());
     } else {
       Serial.printf("[UNSET] %s\n", key);
     }
@@ -222,7 +222,7 @@ void loop() {
     // Get value using typed API based on key type
     if (config.configured(key)) {
       auto value = config.get<Mycila::config::Value>(key);
-      Serial.printf("[GET] %s = %s\n", key, Mycila::config::toString(value).c_str());
+      Serial.printf("[GET] %s = %s\n", key, value.toString().c_str());
     }
 
   } else if (op < 70) {

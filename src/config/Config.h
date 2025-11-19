@@ -157,21 +157,11 @@ namespace Mycila {
           return updates;
         }
 
-        // returns the value of a setting key, or nullptr if the key is not configured
+        // returns the value of a setting key or its default value if not set
         template <typename T = Value>
-        const T& get(const char* key) const {
-          const auto& variant = _get(key);
-          if constexpr (std::is_same_v<T, Value>) {
-            return variant;
-          } else if constexpr (std::is_same_v<T, std::string> && std::holds_alternative<Str>(variant)) {
-            return std::string{std::get<Str>(variant).c_str()};
-          } else if (std::holds_alternative<T>(variant)) {
-            return std::get<T>(variant);
-          }
-          throw std::runtime_error("Invalid type conversion");
-        }
+        auto get(const char* key) const { return _get(key).as<T>(); }
 
-        const char* getString(const char* key) const { return this->get<Str>(key).c_str(); }
+        const char* getString(const char* key) const { return this->get<const char*>(key); }
 
         Result unset(const char* key, bool fireChangeCallback = true) {
           const Key* k = this->key(key);
@@ -234,7 +224,7 @@ namespace Mycila {
               const Value& v = _get(key.name);
               out.print(key.name);
               out.print('=');
-              out.print(toString(v).c_str());
+              out.print(v.toString().c_str());
               out.print("\n");
             }
           }
@@ -257,7 +247,7 @@ namespace Mycila {
                 ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "restore(%s): Invalid data!", key.name);
                 return false;
               }
-              std::optional<Value> value = fromString(std::string(start, end - start).c_str(), key.defaultValue);
+              std::optional<Value> value = Value::fromString(std::string(start, end - start).c_str(), key.defaultValue);
               if (value.has_value()) {
                 settings[key.name] = std::move(value.value());
               } else {
