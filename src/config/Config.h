@@ -161,7 +161,9 @@ namespace Mycila {
         template <typename T = Value>
         const T& get(const char* key) const {
           const auto& variant = _get(key);
-          if constexpr (std::is_same_v<T, std::string> && std::holds_alternative<Str>(variant)) {
+          if constexpr (std::is_same_v<T, Value>) {
+            return variant;
+          } else if constexpr (std::is_same_v<T, std::string> && std::holds_alternative<Str>(variant)) {
             return std::string{std::get<Str>(variant).c_str()};
           } else if (std::holds_alternative<T>(variant)) {
             return std::get<T>(variant);

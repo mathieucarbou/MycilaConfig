@@ -219,6 +219,12 @@ void setup() {
   assert(config.get<unsigned long>("ulong_key") < millis());
   Serial.println("✓ Custom type tests passed");
 
+  Serial.println("\n=== Testing get Value ===");
+  Mycila::config::Value v = config.get<Mycila::config::Value>("bool_key");
+  assert(std::holds_alternative<bool>(v));
+  assert(std::get<bool>(v) == true);
+  Serial.println("✓ get<Value> test passed");
+
   Serial.println("\n=== All Tests Passed! ===");
   Serial.printf("\nHeap usage: %zu bytes\n", config.heapUsage());
   Serial.printf("Free heap: %" PRIu32 " bytes\n", ESP.getFreeHeap());
