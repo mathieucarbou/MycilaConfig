@@ -90,11 +90,16 @@ jobs:
           pip install --upgrade cryptography
           pip install --upgrade intelhex
 
-      - name: Test
-        run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
-
       - name: Big
         run: PLATFORMIO_SRC_DIR=examples/Big PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
+      - name: CompatV10
+        run: PLATFORMIO_SRC_DIR=examples/CompatV10 PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
+      - name: Migration
+        run: PLATFORMIO_SRC_DIR=examples/Migration PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
+      - name: Native
+        run: PLATFORMIO_SRC_DIR=examples/Native PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
+      - name: Test
+        run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
 
   specials:
     name: "pio:${{ matrix.board }} (specials)"
@@ -130,9 +135,9 @@ jobs:
 
       - name: Json
         run: PLATFORMIO_SRC_DIR=examples/Big PIO_BOARD=${{ matrix.board }} pio run -e ci-json
-
+      - name: Migration (64bits)
+        run: PLATFORMIO_SRC_DIR=examples/Migration PIO_BOARD=${{ matrix.board }} pio run -e ci-num64bits
+      - name: Native (64bits)
+        run: PLATFORMIO_SRC_DIR=examples/Native PIO_BOARD=${{ matrix.board }} pio run -e ci-num64bits
       - name: Test (no-ext-bool)
         run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-no-ext-bool
-
-      - name: Test (64bits)
-        run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-num64bits
