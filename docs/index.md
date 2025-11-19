@@ -409,11 +409,11 @@ Mycila::config::Result myFunction() {
       Serial.printf("Key '%s' changed to: %s\n", key, newValue.as<const char*>());
 
       // Type-specific handling
-      if (std::holds_alternative<bool>(newValue.value())) {
-        bool val = std::get<bool>(newValue.value());
+      if (std::holds_alternative<bool>(newValue)) {
+        bool val = newValue.as<bool>();
         Serial.printf("Boolean value: %s\n", val ? "true" : "false");
-      } else if (std::holds_alternative<int>(newValue.value())) {
-        int val = std::get<int>(newValue.value());
+      } else if (std::holds_alternative<int>(newValue)) {
+        int val = newValue.as<int>();
         Serial.printf("Integer value: %d\n", val);
       }
     } else {
@@ -437,12 +437,12 @@ Mycila::config::Result myFunction() {
 ```cpp
 config.configure("port", 80, [](const char* key, const Mycila::config::Value& value) {
   // Value is guaranteed to be int type (matches configure type)
-  int port = std::get<int>(value);
+  int port = value.as<int>();
   return port > 0 && port < 65536;
 });
 
 config.configure("temperature", 25.0f, [](const char* key, const Mycila::config::Value& value) {
-  float temp = std::get<float>(value);
+  float temp = value.as<float>();
   return temp >= -40.0f && temp <= 85.0f;
 });
 ```
