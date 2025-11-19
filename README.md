@@ -406,7 +406,7 @@ Mycila::config::Result myFunction() {
 
   ```cpp
   config.listen([](const char* key, const Mycila::config::Value& newValue) {
-      Serial.printf("Key '%s' changed to: %s\n", key, newValue.toString().c_str());
+      Serial.printf("Key '%s' changed to: %s\n", key, newValue.as<const char*>());
 
       // Type-specific handling
       if (std::holds_alternative<bool>(newValue.value())) {

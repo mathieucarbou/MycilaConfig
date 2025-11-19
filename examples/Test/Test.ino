@@ -32,7 +32,7 @@ void setup() {
   // listeners
 
   config.listen([](const char* key, const Mycila::config::Value& newValue) {
-    Serial.printf("(listen) '%s' => '%s'\n", key, newValue.toString().c_str());
+    Serial.printf("(listen) '%s' => '%s'\n", key, newValue.as<const char*>());
   });
 
   config.listen([]() {
@@ -64,7 +64,7 @@ void setup() {
 
   // set global validator
   assert(config.setValidator([](const char* key, const Mycila::config::Value& newValue) {
-    Serial.printf("(global validator) '%s' => '%s'\n", key, newValue.toString().c_str());
+    Serial.printf("(global validator) '%s' => '%s'\n", key, newValue.as<const char*>());
     return true;
   }));
 
@@ -108,8 +108,8 @@ void setup() {
 
   // set validator
   assert(config.setValidator("key4", [](const char* key, const Mycila::config::Value& newValue) {
-    Serial.printf("(validator) '%s' => '%s'\n", key, newValue.toString().c_str());
-    return std::holds_alternative<Mycila::config::Str>(newValue) && std::get<Mycila::config::Str>(newValue) == "baz";
+    Serial.printf("(validator) '%s' => '%s'\n", key, newValue.as<const char*>());
+    return std::holds_alternative<Mycila::config::Str>(newValue) && newValue.as<Mycila::config::Str>() == "baz";
   }));
 
   // try set a permitted value
