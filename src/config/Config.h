@@ -30,7 +30,7 @@
 
 namespace Mycila {
   namespace config {
-    typedef std::function<void(const char* key, const std::optional<Value>& newValue)> ChangeCallback;
+    typedef std::function<void(const char* key, const Value& newValue)> ChangeCallback;
     typedef std::function<void()> RestoredCallback;
     typedef std::function<bool(const char* key, const Value& newValue)> ValidatorCallback;
 
@@ -187,10 +187,10 @@ namespace Mycila {
           }
 
           // key there and to remove
-          ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "unset(%s): REMOVED", key);
           _cache.erase(key);
+          ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "unset(%s): REMOVED", key);
           if (fireChangeCallback && _changeCallback)
-            _changeCallback(key, std::nullopt);
+            _changeCallback(key, k->defaultValue);
 
           return Status::REMOVED;
         }

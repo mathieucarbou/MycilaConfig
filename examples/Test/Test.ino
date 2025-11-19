@@ -31,9 +31,8 @@ void setup() {
 
   // listeners
 
-  config.listen([](const char* key, const std::optional<Mycila::config::Value>& newValue) {
-    if (newValue.has_value())
-      Serial.printf("(listen) '%s' => '%s'\n", key, Mycila::config::toString(newValue.value()).c_str());
+  config.listen([](const char* key, const Mycila::config::Value& newValue) {
+    Serial.printf("(listen) '%s' => '%s'\n", key, Mycila::config::toString(newValue).c_str());
   });
 
   config.listen([]() {

@@ -73,7 +73,7 @@ void setup() {
   config.configure("timeout", 30.0f);
 
   config.begin("MYAPP", true); // Preload all values
-  
+
   // Use typed getters/setters
   bool debug = config.get<bool>("debug_enable");
   int port = config.get<int>("port");
@@ -90,8 +90,9 @@ void setup() {
 
 - **`Config(Storage& storage)`**  
   Create a Config instance with the specified storage backend. The storage reference must remain valid for the lifetime of the Config object.
-  
+
   **Example:**
+
   ```cpp
   Mycila::config::NVS storage;
   Mycila::config::Config config(storage);
@@ -101,28 +102,32 @@ void setup() {
 
 - **`bool begin(const char* name = "CONFIG", bool preload = false)`**  
   Initialize the configuration system with the specified NVS namespace. Returns true on success.
+
   - `preload = false` (default): Values are loaded from NVS on-demand when first accessed (lazy loading)
   - `preload = true`: All stored values are loaded into cache immediately during initialization
-  
+
   **Preloading benefits:**
+
   - Faster subsequent access (all values already in cache)
   - Useful when you need to access many config values during startup
   - Increases initial memory usage but reduces NVS read operations
-  
+
   **Example:**
+
   ```cpp
   // Lazy loading (default) - minimal startup time
   config.begin("CONFIG");
-  
+
   // Preload all values - faster access, higher initial memory
   config.begin("CONFIG", true);
   ```
 
-- **`template <typename T = Value> bool configure(const char* key, T defaultValue, ValidatorCallback validator = nullptr)`**  
+- **`template <typename T = Value> bool configure(const char* key, T defaultValue, ValidatorCallback validator = nullptr)`**
 - **`bool configure(const char* key, ValidatorCallback validator = nullptr)`** (defaults to empty string)  
   Register a configuration key with an optional default value and validator. Key must be ≤ 15 characters. Returns true if the key was successfully registered, false otherwise (e.g., key too long).
-  
+
   **Supported types for `T`:**
+
   - `bool` - Boolean values
   - `int8_t`, `uint8_t`, `int16_t`, `uint16_t`, `int32_t`, `uint32_t` - Fixed-width integers
   - `int`, `unsigned int` - Standard integers
@@ -131,7 +136,7 @@ void setup() {
   - `double` - Double precision (if `MYCILA_CONFIG_USE_DOUBLE` enabled)
   - `const char*` - C-strings (stored as pointer if in flash/ROM, zero copy)
   - `Mycila::config::Str` - String wrapper with heap/flash detection
-  
+
   **Example:**
 
   ```cpp
@@ -163,13 +168,14 @@ void setup() {
 
 - **`template <typename T = Value> const T& get(const char* key) const`**  
   Get the typed value from configuration. Returns a reference to the value with the specified type. Throws `std::runtime_error` if the key doesn't exist or type doesn't match.
-  
+
   **Supported types:**
+
   - `bool`, `int8_t`, `uint8_t`, `int16_t`, `uint16_t`, `int32_t`, `uint32_t`, `int`, `unsigned int`
   - `int64_t`, `uint64_t` (if `MYCILA_CONFIG_USE_LONG_LONG` enabled)
   - `float`, `double` (if `MYCILA_CONFIG_USE_DOUBLE` enabled)
   - `Mycila::config::Str` - Returns string wrapper
-  
+
   **Example:**
 
   ```cpp
@@ -181,7 +187,7 @@ void setup() {
 
 - **`const char* getString(const char* key) const`**  
   Get the value as a C-string. Convenience wrapper around `get<Str>(key).c_str()`.
-  
+
   **Example:**
 
   ```cpp
@@ -191,7 +197,7 @@ void setup() {
 - **`bool isEmpty(const char* key) const`**  
   Check if the string value is empty.
 
-- **`bool isEqual(const char* key, const std::string& value) const`**  
+- **`bool isEqual(const char* key, const std::string& value) const`**
 - **`bool isEqual(const char* key, const char* value) const`**  
   Compare the stored string value with the provided value.
 
@@ -199,9 +205,9 @@ void setup() {
 
 - **`template <typename T = Value> const Result set(const char* key, T value, bool fireChangeCallback = true)`**  
   Set a typed configuration value. Returns a `Result` object that converts to `bool` (true = operation successful). The type must match the type used during `configure()`.
-  
+
   **Supported types:** Same as `get<T>()`
-  
+
   **Example:**
 
   ```cpp
@@ -211,10 +217,10 @@ void setup() {
   config.set<uint32_t>("counter", 1000);
   ```
 
-- **`Result setString(const char* key, const std::string& value, bool fireChangeCallback = true)`**  
+- **`Result setString(const char* key, const std::string& value, bool fireChangeCallback = true)`**
 - **`Result setString(const char* key, const char* value, bool fireChangeCallback = true)`**  
   Set a string configuration value. Convenience wrapper around `set<Str>()`.
-  
+
   **Example:**
 
   ```cpp
@@ -223,7 +229,7 @@ void setup() {
 
 - **`bool set(std::map<const char*, Value> settings, bool fireChangeCallback = true)`**  
   Set multiple values at once from a map of variant values. Returns true if any value was changed. Pass map by value or use `std::move()` to avoid copying.
-  
+
   **Example:**
 
   ```cpp
@@ -305,18 +311,17 @@ Mycila::config::Result myFunction() {
 
 - **`void listen(ChangeCallback callback)`**  
   Register a callback invoked when any value changes.  
-  **Signature:** `void callback(const char* key, const std::optional<Mycila::config::Value>& newValue)`  
-  
+  **Signature:** `void callback(const char* key, const std::optional<Mycila::config::Value>& newValue)`
+
   The callback receives a `std::optional<std::variant>` value:
+
   - `newValue.has_value() == true` - Key was set or updated with a typed value
   - `newValue.has_value() == false` (std::nullopt) - Key was removed/unset
-  
+
   ```cpp
-  config.listen([](const char* key, const std::optional<Mycila::config::Value>& newValue) {
-    if (newValue.has_value()) {
-      Serial.printf("Key '%s' changed to: %s\n", key, 
-                    Mycila::config::toString(newValue.value()).c_str());
-      
+  config.listen([](const char* key, const Mycila::config::Value& newValue) {
+      Serial.printf("Key '%s' changed to: %s\n", key, Mycila::config::toString(newValue).c_str());
+
       // Type-specific handling
       if (std::holds_alternative<bool>(newValue.value())) {
         bool val = std::get<bool>(newValue.value());
@@ -360,6 +365,7 @@ config.configure("temperature", 25.0f, [](const char* key, const Mycila::config:
 
 - **`void backup(Print& out, bool includeDefaults = true)`**  
   Write configuration as `key=value\n` lines to any `Print` destination (Serial, File, etc.).
+
   - `includeDefaults = true`: Exports all keys (even those using defaults)
   - `includeDefaults = false`: Only exports keys with stored values
 
@@ -374,13 +380,13 @@ config.configure("temperature", 25.0f, [](const char* key, const Mycila::config:
 #### Utilities
 
 - **`const std::vector<Key>& keys() const`**  
-  Get a sorted vector of all registered configuration keys. Each `Key` contains `name` (const char*) and `defaultValue` (Mycila::config::Value variant).
-  
+  Get a sorted vector of all registered configuration keys. Each `Key` contains `name` (const char\*) and `defaultValue` (Mycila::config::Value variant).
+
   **Example:**
 
   ```cpp
   for (const auto& key : config.keys()) {
-    Serial.printf("%s = %s\n", key.name, 
+    Serial.printf("%s = %s\n", key.name,
                   Mycila::config::toString(key.defaultValue).c_str());
   }
   ```
@@ -397,7 +403,7 @@ config.configure("temperature", 25.0f, [](const char* key, const Mycila::config:
 - **`bool isEnableKey(const char* key) const`**  
   Returns true if key ends with `MYCILA_CONFIG_KEY_ENABLE_SUFFIX` (default: `"_enable"`).
 
-- **`void toJson(const JsonObject& root) const`** *(requires `MYCILA_JSON_SUPPORT`)*  
+- **`void toJson(const JsonObject& root) const`** _(requires `MYCILA_JSON_SUPPORT`)_  
   Export all configuration to an ArduinoJson object. Password keys are masked.
 
 ## JSON Export and Password Masking
@@ -431,7 +437,7 @@ build_flags =
 
 ## Backup and Restore Example
 
-```cpp
+````cpp
 // Backup to Serial
 config.backup(Serial);
 
@@ -447,7 +453,7 @@ StringPrint sp2(backupStored);
 config.backup(sp2, false);
 
 // Restore from text
-const char* savedConfig = 
+const char* savedConfig =
   "wifi_ssid=MyNetwork\n"
   "wifi_pwd=secret123\n"
   "debug_enable=true\n";
@@ -461,7 +467,7 @@ settings.emplace("wifi_ssid", Mycila::config::Str("NewNetwork"));
 settings.emplace("port", 8080);
 settings.emplace("enabled", true);
 config.restore(std::move(settings));
-```
+````
 
 ## Configuration Defines
 
@@ -569,43 +575,43 @@ class MyCustomStorage : public Mycila::config::Storage {
       // Initialize your storage
       return true;
     }
-    
+
     bool hasKey(const char* key) const override {
       // Check if key exists
       return false;
     }
-    
+
     std::optional<Mycila::config::Str> loadString(const char* key) const override {
       // Load string value from your storage
       // Return std::nullopt if key doesn't exist
       return std::nullopt;
     }
-    
+
     bool storeString(const char* key, const char* value) override {
       // Save string value to your storage
       return true;
     }
-    
+
     bool remove(const char* key) override {
       // Remove key from your storage
       return true;
     }
-    
+
     bool removeAll() override {
       // Clear all keys
       return true;
     }
-    
+
     // Optional: Implement typed load/store methods for better performance
     std::optional<bool> loadBool(const char* key) const override { return std::nullopt; }
     bool storeBool(const char* key, bool value) override { return false; }
-    
+
     std::optional<int32_t> loadI32(const char* key) const override { return std::nullopt; }
     bool storeI32(const char* key, int32_t value) override { return false; }
-    
+
     std::optional<float> loadFloat(const char* key) const override { return std::nullopt; }
     bool storeFloat(const char* key, float value) override { return false; }
-    
+
     // ... other typed methods (loadI8/U8/I16/U16/I64/U64, loadDouble, etc.)
 };
 

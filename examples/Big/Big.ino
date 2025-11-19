@@ -188,9 +188,8 @@ void setup() {
   printHeap("After begin()");
 
   // Register a change listener
-  config.listen([](const char* key, const std::optional<Mycila::config::Value>& newValue) {
-    if (newValue.has_value())
-      Serial.printf("[CHANGE] %s = %s\n", key, Mycila::config::toString(newValue.value()).c_str());
+  config.listen([](const char* key, const Mycila::config::Value& newValue) {
+    Serial.printf("[CHANGE] %s = %s\n", key, Mycila::config::toString(newValue).c_str());
   });
 
   Serial.println("\n=== Configuration Complete ===");
