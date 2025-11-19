@@ -289,7 +289,7 @@ namespace Mycila {
             // Check each Key's defaultValue for heap-allocated strings
             for (const auto& key : _keys) {
               total += variantSize;
-              total += std::holds_alternative<Str>(key.defaultValue) ? std::get<Str>(key.defaultValue).heapUsage() : 0;
+              total += std::holds_alternative<Str>(key.defaultValue) ? key.defaultValue.as<Str>().heapUsage() : 0;
             }
           }
 
@@ -301,7 +301,7 @@ namespace Mycila {
           for (const auto& [key, val] : _cache) {
             total += cacheNodeSize; // map node + pair structure
             total += variantSize;
-            total += std::holds_alternative<Str>(val) ? std::get<Str>(val).heapUsage() : 0;
+            total += std::holds_alternative<Str>(val) ? val.as<Str>().heapUsage() : 0;
           }
 
           // validators map: std::map<const char*, ValidatorCallback>
