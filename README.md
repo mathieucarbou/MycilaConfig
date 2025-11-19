@@ -12,6 +12,37 @@
 
 A simple, efficient configuration library for ESP32 (Arduino framework) with pluggable storage backends (NVS included). Supports native types (bool, integers, floats, strings) with type safety via `std::variant`. Provides defaults, caching, generic typed API, validators, change/restore callbacks, backup/restore, and optional JSON export with password masking.
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+  - [PlatformIO](#platformio)
+  - [Optional: JSON Support](#optional-json-support)
+- [Quick Start](#quick-start)
+- [Migrating from v10 to v11](#migrating-from-v10-to-v11)
+- [API Reference](#api-reference)
+  - [Class: `Mycila::config::Config`](#class-mycilaconfigconfig)
+    - [Constructor](#constructor)
+    - [Setup and Storage](#setup-and-storage)
+    - [Reading Values](#reading-values)
+    - [Writing Values](#writing-values)
+    - [Result and Status Enum](#result-and-status-enum)
+    - [Callbacks and Validators](#callbacks-and-validators)
+    - [Backup and Restore](#backup-and-restore)
+    - [Utilities](#utilities)
+- [JSON Export and Password Masking](#json-export-and-password-masking)
+- [Backup and Restore Example](#backup-and-restore-example)
+- [Configuration Defines](#configuration-defines)
+- [Key Naming Conventions](#key-naming-conventions)
+- [Memory Optimization](#memory-optimization)
+- [Examples](#examples)
+  - [Test Example](#test-example)
+  - [JSON Export](#json-export)
+  - [Native Type Support](#native-type-support)
+  - [Large Configuration](#large-configuration)
+- [Custom Storage Backend](#custom-storage-backend)
+- [License](#license)
+
 ## Features
 
 - 💾 **Persistent storage** using ESP32 NVS with pluggable storage backend
@@ -81,6 +112,61 @@ void setup() {
   const char* ssid = config.getString("wifi_ssid");
 }
 ```
+
+## Migrating from v10 to v11
+
+Version 11 introduces a major refactoring with:
+
+- New namespace structure: `Mycila::config::`
+- Native type support with `std::variant`
+- Generic typed API: `get<T>()` and `set<T>()`
+- Callbacks now receive `std::optional<Value>` instead of string values
+
+To ease migration from v10, a **deprecated compatibility wrapper** is provided that maintains the v10 string-based API:
+
+```cpp
+#include <MycilaConfig.h>
+#include <MycilaConfigDeprecated.h>
+#include <MycilaConfigStorageNVS.h>
+
+Mycila::config::NVS storage;
+Mycila::config::Config configNew(storage);
+Mycila::config::ConfigV10 config(configNew);
+
+void setup() {
+  // Use the old v10 API - all methods still work
+  config.configure("debug_enable", "false");
+  config.configure("port", "80");
+  
+  config.begin("MYAPP");
+  
+  // Old string-based API
+  const char* port = config.getString("port");
+  bool debug = config.getBool("debug_enable");
+  int portNum = config.getInt("port");
+  
+  // Old string-based callbacks
+  config.listen([](const char* key, const char* newValue) {
+    Serial.printf("Changed: %s = %s\n", key, newValue);
+  });
+  
+  // Old validators
+  config.setValidator("port", [](const char* key, const char* value) {
+    int p = atoi(value);
+    return p > 0 && p < 65536;
+  });
+  
+  config.setString("port", "8080");
+}
+```
+
+**Migration path:**
+
+1. **Immediate compatibility**: Include `MycilaConfigDeprecated.h` and use `ConfigV10` wrapper - no code changes needed
+2. **Gradual migration**: Start using new typed API alongside deprecated API
+3. **Full migration**: Remove deprecated wrapper and update to new API
+
+**Note:** The deprecated wrapper will be removed in a future major version. Plan to migrate to the new typed API.
 
 ## API Reference
 
