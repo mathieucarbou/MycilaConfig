@@ -170,6 +170,25 @@ namespace Mycila {
           return updates;
         }
 
+        bool set(std::map<const char*, std::string> settings, bool fireChangeCallback = true) {
+          std::map<const char*, Value> converted;
+          for (const auto& [k, f] : settings) {
+            const Key* key = this->key(k);
+            if (key == nullptr) {
+              ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "set(): Unknown key '%s'", k);
+              continue;
+            }
+            std::optional<Value> opt = Value::fromString(f.c_str(), key->defaultValue);
+            if (opt.has_value()) {
+              converted[key->name] = std::move(opt.value());
+            } else {
+              ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "set(): Invalid value for key '%s': '%s'", key->name, f.c_str());
+              return false;
+            }
+          }
+          return set(std::move(converted), fireChangeCallback);
+        }
+
         // returns the value of a setting key or its default value if not set
         template <typename T = Value>
         auto get(const char* key) const { return _get(key).as<T>(); }
