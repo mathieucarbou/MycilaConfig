@@ -248,7 +248,11 @@ namespace Mycila {
             }
           }
 
-          ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Migration completed with %d error(s)!", errors);
+          if (errors) {
+            ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Migration completed with %d error(s)!", errors);
+          } else {
+            ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "Migration completed successfully.");
+          }
 
           return errors == 0;
         }
