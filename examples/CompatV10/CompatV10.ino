@@ -6,8 +6,8 @@
 #include <HardwareSerial.h>
 
 #include <MycilaConfig.h>
-#include <MycilaConfigStorageNVS.h>
 #include <MycilaConfigV10.h>
+#include <MycilaConfigStorageNVS.h>
 
 Mycila::config::NVS storage;
 Mycila::config::Config configNew(storage);

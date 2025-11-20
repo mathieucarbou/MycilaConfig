@@ -356,6 +356,8 @@ namespace Mycila {
 #endif
 
       private:
+        friend class Migration;
+
         Storage* _storage;
         const char* _name = nullptr;
         ChangeCallback _changeCallback = nullptr;
@@ -480,7 +482,28 @@ namespace Mycila {
             }
           }
 
-          const bool stored = std::visit(
+          // update failed ?
+          if (_store(key, value)) {
+            ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "set(%s): PERSISTED", key);
+          } else {
+            ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "set(%s): ERR_FAIL_ON_WRITE", key);
+            return Status::ERR_FAIL_ON_WRITE;
+          }
+
+          _cache[key] = std::move(value);
+          ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "set(%s): CACHED", key);
+
+          if (fireChangeCallback && _changeCallback) {
+            // NOTE: The 'value' pointer passed to the callback is only valid during this callback execution.
+            // Do NOT store or use the pointer after the callback returns.
+            _changeCallback(key, _cache[key]);
+          }
+
+          return Status::PERSISTED;
+        }
+
+        bool _store(const char* key, const Value& value) {
+          return std::visit(
             [&](auto&& arg) -> bool {
               using T = std::decay_t<decltype(arg)>;
               if constexpr (std::is_same_v<T, bool>) {
@@ -515,25 +538,6 @@ namespace Mycila {
               return false;
             },
             value);
-
-          // update failed ?
-          if (stored) {
-            ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "set(%s): PERSISTED", key);
-          } else {
-            ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "set(%s): ERR_FAIL_ON_WRITE", key);
-            return Status::ERR_FAIL_ON_WRITE;
-          }
-
-          _cache[key] = std::move(value);
-          ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "set(%s): CACHED", key);
-
-          if (fireChangeCallback && _changeCallback) {
-            // NOTE: The 'value' pointer passed to the callback is only valid during this callback execution.
-            // Do NOT store or use the pointer after the callback returns.
-            _changeCallback(key, _cache[key]);
-          }
-
-          return Status::PERSISTED;
         }
     };
   } // namespace config

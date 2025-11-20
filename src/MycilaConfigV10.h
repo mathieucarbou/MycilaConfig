@@ -4,12 +4,4 @@
  */
 #pragma once
 
-#include "./config/Config.h"
-#include "./config/Defines.h"
-#include "./config/Key.h"
-#include "./config/Result.h"
-#include "./config/Storage.h"
-#include "./config/Str.h"
-#include "./config/Value.h"
-
 #include "./compat/ConfigV10.h"
