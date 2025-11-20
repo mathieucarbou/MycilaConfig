@@ -79,7 +79,7 @@ namespace Mycila {
 
             // key not a string ?
             if (!value.has_value()) {
-              ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "Key '%s' not a string", key.name);
+              ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "migrate(%s): already migrated", key.name);
               continue;
             }
 
@@ -91,11 +91,11 @@ namespace Mycila {
                 if constexpr (std::is_same_v<T, bool>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to bool", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to bool", key.name);
                     return false;
                   }
                   if (!storage.storeBool(key.name, converted.value().as<bool>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to bool", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): bool", key.name);
@@ -104,11 +104,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, int8_t>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to int8_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to int8_t", key.name);
                     return false;
                   }
                   if (!storage.storeI8(key.name, converted.value().as<int8_t>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to int8_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): int8_t", key.name);
@@ -117,11 +117,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, uint8_t>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to uint8_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to uint8_t", key.name);
                     return false;
                   }
                   if (!storage.storeU8(key.name, converted.value().as<uint8_t>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to uint8_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): uint8_t", key.name);
@@ -130,11 +130,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, int16_t>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to int16_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to int16_t", key.name);
                     return false;
                   }
                   if (!storage.storeI16(key.name, converted.value().as<int16_t>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to int16_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): int16_t", key.name);
@@ -143,11 +143,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, uint16_t>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to uint16_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to uint16_t", key.name);
                     return false;
                   }
                   if (!storage.storeU16(key.name, converted.value().as<uint16_t>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to uint16_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): uint16_t", key.name);
@@ -156,11 +156,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, int>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to int32_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to int32_t", key.name);
                     return false;
                   }
                   if (!storage.storeI32(key.name, converted.value().as<int32_t>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to int32_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): int32_t", key.name);
@@ -169,11 +169,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, uint32_t> || std::is_same_v<T, unsigned int>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to uint32_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to uint32_t", key.name);
                     return false;
                   }
                   if (!storage.storeU32(key.name, converted.value().as<uint32_t>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to uint32_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): uint32_t", key.name);
@@ -183,11 +183,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, int64_t>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to int64_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to int64_t", key.name);
                     return false;
                   }
                   if (!storage.storeI64(key.name, converted.value().as<int64_t>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to int64_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): int64_t", key.name);
@@ -196,11 +196,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, uint64_t>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to uint64_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to uint64_t", key.name);
                     return false;
                   }
                   if (!storage.storeU64(key.name, converted.value().as<uint64_t>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to uint64_t", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): uint64_t", key.name);
@@ -209,11 +209,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, float>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to float", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to float", key.name);
                     return false;
                   }
                   if (!storage.storeFloat(key.name, converted.value().as<float>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to float", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): float", key.name);
@@ -223,11 +223,11 @@ namespace Mycila {
                 } else if constexpr (std::is_same_v<T, double>) {
                   std::optional<Value> converted = Value::fromString(value.value().c_str(), arg);
                   if (!converted.has_value()) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s' to double", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to convert to double", key.name);
                     return false;
                   }
                   if (!storage.storeDouble(key.name, converted.value().as<double>())) {
-                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to store converted key '%s' to double", key.name);
+                    ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Failed to store", key.name);
                     return false;
                   }
                   ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "migrate(%s): double", key.name);
@@ -238,7 +238,7 @@ namespace Mycila {
                   return true;
                 }
 
-                ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to convert key '%s': unsupported type", key.name);
+                ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "migrate(%s): Unsupported type", key.name);
                 return false;
               },
               key.defaultValue);
@@ -248,9 +248,7 @@ namespace Mycila {
             }
           }
 
-          if (errors) {
-            ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Migration completed with %d errors!", errors);
-          }
+          ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Migration completed with %d error(s)!", errors);
 
           return errors == 0;
         }
