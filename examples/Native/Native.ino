@@ -55,6 +55,7 @@ void setup() {
 
   // String
   config.configure("str_key", "Hello World");
+  config.configure("std_str_key", std::string("Hello World"));
 
   // some custom types
   config.configure("size_t_key", static_cast<size_t>(1));

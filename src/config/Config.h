@@ -55,6 +55,9 @@ namespace Mycila {
         bool configure(const char* key, ValidatorCallback callback = nullptr) {
           return configure<Value>(key, Value(""), std::move(callback));
         }
+        bool configure(const char* key, std::string defaultValue, ValidatorCallback callback = nullptr) {
+          return configure<Value>(key, Value(defaultValue.c_str()), std::move(callback));
+        }
 
         // starts the config system and returns true if successful
         bool begin(const char* name, bool preload = false) {
