@@ -37,7 +37,7 @@ namespace Mycila {
     class Config {
       public:
         explicit Config(Storage& storage) : _storage(&storage) {}
-        ~Config() = default;
+        ~Config() { end(); }
 
         // Add a new configuration key with its default value and optional validator
         // Returns true if the key was added, false otherwise (e.g. key too long)
@@ -57,14 +57,14 @@ namespace Mycila {
         }
 
         // starts the config system and returns true if successful
-        bool begin(const char* name = "CONFIG", bool preload = false) {
-          ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "Initializing Config System: %s...", name);
+        bool begin(const char* name, bool preload = false) {
+          ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "Initializing Config '%s'", name);
           if (!_storage->begin(name)) {
             ESP_LOGE(MYCILA_CONFIG_LOG_TAG, "Failed to initialize storage backend!");
             return false;
           }
           if (preload) {
-            ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "Preloading Config System: %s...", name);
+            ESP_LOGI(MYCILA_CONFIG_LOG_TAG, "Preloading Config '%s'", name);
             for (auto& key : _keys) {
               auto value = _storage->loadString(key.name);
               if (value.has_value()) {
@@ -73,8 +73,21 @@ namespace Mycila {
               }
             }
           }
+          _name = name;
           return true;
         }
+
+        void end() {
+          _name = nullptr;
+          _storage->end();
+          _cache.clear();
+        }
+
+        Storage& storage() const { return *_storage; }
+
+        const char* name() const { return _name; }
+
+        bool enabled() const { return _name != nullptr; }
 
         // register a callback to be called when a config value changes
         void listen(ChangeCallback callback) { _changeCallback = std::move(callback); }
@@ -119,7 +132,7 @@ namespace Mycila {
         bool configured(const char* key) const { return this->key(key) != nullptr; }
 
         // returns true if the key is stored
-        bool stored(const char* key) const { return _storage->hasKey(key); }
+        bool stored(const char* key) const { return enabled() && _storage->hasKey(key); }
 
         // get list of configured keys
         const std::vector<Key>& keys() const { return _keys; }
@@ -164,6 +177,11 @@ namespace Mycila {
         const char* getString(const char* key) const { return this->get<const char*>(key); }
 
         Result unset(const char* key, bool fireChangeCallback = true) {
+          if (!enabled()) {
+            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "unset(%s): ERR_DISABLED", key);
+            return Status::ERR_DISABLED;
+          }
+
           const Key* k = this->key(key);
 
           // check if the key is valid
@@ -260,7 +278,7 @@ namespace Mycila {
         }
 
         bool restore(std::map<const char*, Value> settings) {
-          ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "Restoring %d settings...", settings.size());
+          ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "Restoring %d settings", settings.size());
           bool restored = set(std::move(settings), false);
           if (restored) {
             ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "Config restored");
@@ -339,6 +357,7 @@ namespace Mycila {
 
       private:
         Storage* _storage;
+        const char* _name = nullptr;
         ChangeCallback _changeCallback = nullptr;
         RestoredCallback _restoreCallback = nullptr;
         ValidatorCallback _globalValidatorCallback = nullptr;
@@ -353,6 +372,11 @@ namespace Mycila {
           if (k == nullptr) {
             ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "get(%s): ERR_UNKNOWN_KEY", key);
             throw std::runtime_error("Unknown key");
+          }
+
+          if (!enabled()) {
+            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "get(%s): ERR_DISABLED", key);
+            return k->defaultValue;
           }
 
           // check if we have a cached value
@@ -412,6 +436,11 @@ namespace Mycila {
         }
 
         const Result _set(const char* key, Value value, bool fireChangeCallback = true) {
+          if (!enabled()) {
+            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "set(%s): ERR_DISABLED", key);
+            return Status::ERR_DISABLED;
+          }
+
           const Key* k = this->key(key);
 
           // check if the key is valid

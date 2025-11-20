@@ -10,6 +10,7 @@ namespace Mycila {
       PERSISTED,
       DEFAULTED,
       REMOVED,
+      ERR_DISABLED,
       ERR_UNKNOWN_KEY,
       ERR_INVALID_TYPE,
       ERR_INVALID_VALUE,
