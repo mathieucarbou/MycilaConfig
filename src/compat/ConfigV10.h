@@ -103,18 +103,12 @@ namespace Mycila {
         bool isEmpty(const char* key) const { return _delegate->isEmpty(key); }
         bool isEqual(const char* key, const std::string& value) const { return _delegate->isEqual(key, value); }
         bool isEqual(const char* key, const char* value) const { return _delegate->isEqual(key, value); }
-        bool isPasswordKey(const char* key) const { return _delegate->isPasswordKey(key); }
-        bool isEnableKey(const char* key) const { return _delegate->isEnableKey(key); }
+        bool isPasswordKey(const char* key) const { return this->key(key)->isPasswordKey(); }
+        bool isEnableKey(const char* key) const { return this->key(key)->isEnableKey(); }
 
         void backup(Print& out, bool includeDefaults = true) { _delegate->backup(out, includeDefaults); }
         bool restore(const char* data) { return _delegate->restore(data); }
-        bool restore(const std::map<const char*, std::string>& settings) {
-          std::map<const char*, Value> vals;
-          for (const auto& [key, value] : settings) {
-            vals[key] = Value(value.c_str());
-          }
-          return _delegate->restore(std::move(vals));
-        }
+        bool restore(const std::map<const char*, std::string>& settings) { return _delegate->restore(std::move(settings)); }
 
         size_t heapUsage() const { return _delegate->heapUsage(); }
 

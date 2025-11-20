@@ -164,37 +164,30 @@ namespace Mycila {
           bool updates = false;
           // start restoring settings
           for (const auto& k : _keys)
-            if (!isEnableKey(k.name) && settings.find(k.name) != settings.end())
+            if (!k.isEnableKey() && settings.find(k.name) != settings.end())
               updates |= _set(k.name, std::move(settings.at(k.name)), fireChangeCallback).isStorageUpdated();
           // then restore settings enabling/disabling a feature
           for (const auto& k : _keys)
-            if (isEnableKey(k.name) && settings.find(k.name) != settings.end())
+            if (k.isEnableKey() && settings.find(k.name) != settings.end())
               updates |= _set(k.name, std::move(settings.at(k.name)), fireChangeCallback).isStorageUpdated();
           return updates;
         }
 
-        bool set(std::map<const char*, std::string> settings, bool fireChangeCallback = true) {
-          std::map<const char*, Value> converted;
-          for (const auto& [k, f] : settings) {
-            const Key* key = this->key(k);
-            if (key == nullptr) {
-              ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "set(): Unknown key '%s'", k);
-              continue;
-            }
-            std::optional<Value> opt = Value::fromString(f.c_str(), key->defaultValue);
-            if (opt.has_value()) {
-              converted[key->name] = std::move(opt.value());
-            } else {
-              ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "set(): Invalid value for key '%s': '%s'", key->name, f.c_str());
-              return false;
-            }
-          }
-          return set(std::move(converted), fireChangeCallback);
-        }
+        bool set(std::map<const char*, std::string> settings, bool fireChangeCallback = true) { return set(_convert(settings), fireChangeCallback); }
 
         // returns the value of a setting key or its default value if not set
         template <typename T = Value>
-        auto get(const char* key) const { return _get(key).as<T>(); }
+        auto get(const char* key) const {
+          const Key* k = this->key(key);
+
+          // check if key is configured
+          if (k == nullptr) {
+            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "get(%s): ERR_UNKNOWN_KEY", key);
+            throw std::runtime_error("Unknown key");
+          }
+
+          return _get(*k).as<T>();
+        }
 
         const char* getString(const char* key) const { return this->get<const char*>(key); }
 
@@ -242,26 +235,12 @@ namespace Mycila {
           return v == value || strcmp(v, value) == 0;
         }
 
-        bool isPasswordKey(const char* key) const {
-          uint32_t len = strlen(key);
-          if (len < 4)
-            return false;
-          return strcmp(key + len - 4, MYCILA_CONFIG_KEY_PASSWORD_SUFFIX) == 0;
-        }
-
-        bool isEnableKey(const char* key) const {
-          uint32_t len = strlen(key);
-          if (len < 7)
-            return false;
-          return strcmp(key + len - 7, MYCILA_CONFIG_KEY_ENABLE_SUFFIX) == 0;
-        }
-
         // backup current settings to a Print stream
         // if includeDefaults is true, also include default values for keys not set by the user
         void backup(Print& out, bool includeDefaults = true) { // NOLINT
           for (auto& key : _keys) {
             if (includeDefaults || stored(key.name)) {
-              const Value& v = _get(key.name);
+              const Value& v = _get(key);
               out.print(key.name);
               out.print('=');
               out.print(v.toString().c_str());
@@ -310,6 +289,7 @@ namespace Mycila {
             ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "No change detected");
           return restored;
         }
+        bool restore(std::map<const char*, std::string> settings) { return restore(_convert(settings)); }
 
         // approximate heap usage by config system (keys, defaults, cached values)
         size_t heapUsage() const {
@@ -355,11 +335,11 @@ namespace Mycila {
 #ifdef MYCILA_JSON_SUPPORT
         void toJson(const JsonObject& root) {
           for (auto& key : _keys) {
-            toJson(key.name, root[key.name].to<JsonVariant>());
+            toJson(key, root[key.name].to<JsonVariant>());
           }
         }
 
-        void toJson(const char* key, const JsonVariant& out) {
+        void toJson(const Key& key, const JsonVariant& out) {
           std::visit(
             [&](auto&& value) -> void {
               using T = std::decay_t<decltype(value)>;
@@ -367,7 +347,7 @@ namespace Mycila {
                 out.set(value);
               } else if constexpr (std::is_same_v<T, Str>) {
   #ifdef MYCILA_CONFIG_PASSWORD_MASK
-                out.set(!isPasswordKey(key) ? value.c_str() : MYCILA_CONFIG_PASSWORD_MASK);
+                out.set(!key.isPasswordKey() ? value.c_str() : MYCILA_CONFIG_PASSWORD_MASK);
   #else
                 out.set(value.c_str());
   #endif
@@ -389,24 +369,34 @@ namespace Mycila {
         mutable std::map<const char*, Value> _cache;
         mutable std::map<const char*, ValidatorCallback> _validators;
 
-        const Value& _get(const char* key) const {
-          const Key* k = this->key(key);
-
-          // check if key is configured
-          if (k == nullptr) {
-            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "get(%s): ERR_UNKNOWN_KEY", key);
-            throw std::runtime_error("Unknown key");
+        std::map<const char*, Value> _convert(const std::map<const char*, std::string>& settings) {
+          std::map<const char*, Value> converted;
+          for (const auto& [k, f] : settings) {
+            const Key* key = this->key(k);
+            if (key == nullptr) {
+              ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "convert(): Unknown key '%s'", k);
+              continue;
+            }
+            std::optional<Value> opt = Value::fromString(f.c_str(), key->defaultValue);
+            if (opt.has_value()) {
+              converted[key->name] = std::move(opt.value());
+            } else {
+              ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "convert(): Invalid value for key '%s': '%s'", key->name, f.c_str());
+            }
           }
+          return converted;
+        }
 
+        const Value& _get(const Key& key) const {
           if (!enabled()) {
-            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "get(%s): ERR_DISABLED", key);
-            return k->defaultValue;
+            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "get(%s): ERR_DISABLED", key.name);
+            return key.defaultValue;
           }
 
           // check if we have a cached value
-          auto it = _cache.find(key);
+          auto it = _cache.find(key.name);
           if (it != _cache.end()) {
-            ESP_LOGV(MYCILA_CONFIG_LOG_TAG, "get(%s): CACHE HIT", key);
+            ESP_LOGV(MYCILA_CONFIG_LOG_TAG, "get(%s): CACHE HIT", key.name);
             return it->second;
           }
 
@@ -414,49 +404,49 @@ namespace Mycila {
             [&](auto&& def) -> std::optional<Value> {
               using T = std::decay_t<decltype(def)>;
               if constexpr (std::is_same_v<T, bool>)
-                return _storage->loadBool(key);
+                return _storage->loadBool(key.name);
               else if constexpr (std::is_same_v<T, int8_t>)
-                return _storage->loadI8(key);
+                return _storage->loadI8(key.name);
               else if constexpr (std::is_same_v<T, uint8_t>)
-                return _storage->loadU8(key);
+                return _storage->loadU8(key.name);
               else if constexpr (std::is_same_v<T, int16_t>)
-                return _storage->loadI16(key);
+                return _storage->loadI16(key.name);
               else if constexpr (std::is_same_v<T, uint16_t>)
-                return _storage->loadU16(key);
+                return _storage->loadU16(key.name);
               else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, int>)
-                return _storage->loadI32(key);
+                return _storage->loadI32(key.name);
               else if constexpr (std::is_same_v<T, uint32_t> || std::is_same_v<T, unsigned int>)
-                return _storage->loadU32(key);
+                return _storage->loadU32(key.name);
 #if MYCILA_CONFIG_USE_LONG_LONG
               else if constexpr (std::is_same_v<T, int64_t>)
-                return _storage->loadI64(key);
+                return _storage->loadI64(key.name);
               else if constexpr (std::is_same_v<T, uint64_t>)
-                return _storage->loadU64(key);
+                return _storage->loadU64(key.name);
 #endif
               else if constexpr (std::is_same_v<T, float>)
-                return _storage->loadFloat(key);
+                return _storage->loadFloat(key.name);
 #if MYCILA_CONFIG_USE_DOUBLE
               else if constexpr (std::is_same_v<T, double>)
-                return _storage->loadDouble(key);
+                return _storage->loadDouble(key.name);
 #endif
               else if constexpr (std::is_same_v<T, Str>)
-                return _storage->loadString(key);
+                return _storage->loadString(key.name);
 
               return std::nullopt;
             },
-            k->defaultValue);
+            key.defaultValue);
 
           // real key exists ?
           if (value.has_value()) {
             // allocate and copy the string to cache
-            _cache[key] = std::move(value.value());
-            ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "get(%s): CACHED", key);
-            return _cache[key];
+            _cache[key.name] = std::move(value.value());
+            ESP_LOGD(MYCILA_CONFIG_LOG_TAG, "get(%s): CACHED", key.name);
+            return _cache[key.name];
           }
 
           // key does not exist, or not assigned to a value
-          ESP_LOGV(MYCILA_CONFIG_LOG_TAG, "get(%s): DEFAULT", key);
-          return k->defaultValue;
+          ESP_LOGV(MYCILA_CONFIG_LOG_TAG, "get(%s): DEFAULT", key.name);
+          return key.defaultValue;
         }
 
         const Result _set(const char* key, Value value, bool fireChangeCallback = true) {

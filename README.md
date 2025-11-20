@@ -482,10 +482,10 @@ config.configure("temperature", 25.0f, [](const char* key, const Mycila::config:
 - **`const Key* key(const char* buffer) const`**  
   Given a string buffer, return a pointer to the Key object if it matches a registered key. Returns `nullptr` if not found.
 
-- **`bool isPasswordKey(const char* key) const`**  
+- **`bool isPasswordKey() const`**  
   Returns true if key ends with `MYCILA_CONFIG_KEY_PASSWORD_SUFFIX` (default: `"_pwd"`).
 
-- **`bool isEnableKey(const char* key) const`**  
+- **`bool isEnableKey() const`**  
   Returns true if key ends with `MYCILA_CONFIG_KEY_ENABLE_SUFFIX` (default: `"_enable"`).
 
 - **`void toJson(const JsonObject& root) const`** _(requires `MYCILA_JSON_SUPPORT`)_  

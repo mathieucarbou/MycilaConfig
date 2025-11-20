@@ -25,6 +25,20 @@ namespace Mycila {
         }
         Key(const Key&) = delete;
         Key& operator=(const Key&) = delete;
+
+        bool isPasswordKey() const {
+          uint32_t len = strlen(name);
+          if (len < 4)
+            return false;
+          return strcmp(name + len - 4, MYCILA_CONFIG_KEY_PASSWORD_SUFFIX) == 0;
+        }
+
+        bool isEnableKey() const {
+          uint32_t len = strlen(name);
+          if (len < 7)
+            return false;
+          return strcmp(name + len - 7, MYCILA_CONFIG_KEY_ENABLE_SUFFIX) == 0;
+        }
     };
   } // namespace config
 } // namespace Mycila
