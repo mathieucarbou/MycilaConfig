@@ -94,6 +94,8 @@ jobs:
         run: PLATFORMIO_SRC_DIR=examples/Big PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
       - name: CompatV10
         run: PLATFORMIO_SRC_DIR=examples/CompatV10 PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
+      - name: FS
+        run: PLATFORMIO_SRC_DIR=examples/FS PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
       - name: Migration
         run: PLATFORMIO_SRC_DIR=examples/Migration PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
       - name: Native
@@ -135,6 +137,8 @@ jobs:
 
       - name: Json
         run: PLATFORMIO_SRC_DIR=examples/Big PIO_BOARD=${{ matrix.board }} pio run -e ci-json
+      - name: FS (64bits)
+        run: PLATFORMIO_SRC_DIR=examples/FS PIO_BOARD=${{ matrix.board }} pio run -e ci-num64bits
       - name: Migration (64bits)
         run: PLATFORMIO_SRC_DIR=examples/Migration PIO_BOARD=${{ matrix.board }} pio run -e ci-num64bits
       - name: Native (64bits)
