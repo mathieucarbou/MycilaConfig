@@ -403,36 +403,7 @@ namespace Mycila {
           std::optional<Value> value = std::visit(
             [&](auto&& def) -> std::optional<Value> {
               using T = std::decay_t<decltype(def)>;
-              if constexpr (std::is_same_v<T, bool>)
-                return _storage->loadBool(key.name);
-              else if constexpr (std::is_same_v<T, int8_t>)
-                return _storage->loadI8(key.name);
-              else if constexpr (std::is_same_v<T, uint8_t>)
-                return _storage->loadU8(key.name);
-              else if constexpr (std::is_same_v<T, int16_t>)
-                return _storage->loadI16(key.name);
-              else if constexpr (std::is_same_v<T, uint16_t>)
-                return _storage->loadU16(key.name);
-              else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, int>)
-                return _storage->loadI32(key.name);
-              else if constexpr (std::is_same_v<T, uint32_t> || std::is_same_v<T, unsigned int>)
-                return _storage->loadU32(key.name);
-#if MYCILA_CONFIG_USE_LONG_LONG
-              else if constexpr (std::is_same_v<T, int64_t>)
-                return _storage->loadI64(key.name);
-              else if constexpr (std::is_same_v<T, uint64_t>)
-                return _storage->loadU64(key.name);
-#endif
-              else if constexpr (std::is_same_v<T, float>)
-                return _storage->loadFloat(key.name);
-#if MYCILA_CONFIG_USE_DOUBLE
-              else if constexpr (std::is_same_v<T, double>)
-                return _storage->loadDouble(key.name);
-#endif
-              else if constexpr (std::is_same_v<T, Str>)
-                return _storage->loadString(key.name);
-
-              return std::nullopt;
+              return _load<T>(key.name);
             },
             key.defaultValue);
 
@@ -550,6 +521,39 @@ namespace Mycila {
               return false;
             },
             value);
+        }
+
+        template <typename T = Value>
+        std::optional<T> _load(const char* key) const {
+          if constexpr (std::is_same_v<T, bool>)
+            return _storage->loadBool(key);
+          else if constexpr (std::is_same_v<T, int8_t>)
+            return _storage->loadI8(key);
+          else if constexpr (std::is_same_v<T, uint8_t>)
+            return _storage->loadU8(key);
+          else if constexpr (std::is_same_v<T, int16_t>)
+            return _storage->loadI16(key);
+          else if constexpr (std::is_same_v<T, uint16_t>)
+            return _storage->loadU16(key);
+          else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, int>)
+            return _storage->loadI32(key);
+          else if constexpr (std::is_same_v<T, uint32_t> || std::is_same_v<T, unsigned int>)
+            return _storage->loadU32(key);
+#if MYCILA_CONFIG_USE_LONG_LONG
+          else if constexpr (std::is_same_v<T, int64_t>)
+            return _storage->loadI64(key);
+          else if constexpr (std::is_same_v<T, uint64_t>)
+            return _storage->loadU64(key);
+#endif
+          else if constexpr (std::is_same_v<T, float>)
+            return _storage->loadFloat(key);
+#if MYCILA_CONFIG_USE_DOUBLE
+          else if constexpr (std::is_same_v<T, double>)
+            return _storage->loadDouble(key);
+#endif
+          else if constexpr (std::is_same_v<T, Str>)
+            return _storage->loadString(key);
+          return std::nullopt;
         }
     };
   } // namespace config
