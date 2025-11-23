@@ -48,7 +48,18 @@ namespace Mycila {
           int64_t mt7;
           uint64_t mt8;
           size_t len = 0;
-          return nvs_get_i8(_handle, key, &mt1) == ESP_OK || nvs_get_u8(_handle, key, &mt2) == ESP_OK || nvs_get_i16(_handle, key, &mt3) == ESP_OK || nvs_get_u16(_handle, key, &mt4) == ESP_OK || nvs_get_i32(_handle, key, &mt5) == ESP_OK || nvs_get_u32(_handle, key, &mt6) == ESP_OK || nvs_get_i64(_handle, key, &mt7) == ESP_OK || nvs_get_u64(_handle, key, &mt8) == ESP_OK || nvs_get_str(_handle, key, NULL, &len) == ESP_OK || nvs_get_blob(_handle, key, NULL, &len) == ESP_OK;
+          // clang-format off
+          return nvs_get_i8(_handle, key, &mt1) == ESP_OK
+            || nvs_get_u8(_handle, key, &mt2) == ESP_OK
+            || nvs_get_i16(_handle, key, &mt3) == ESP_OK
+            || nvs_get_u16(_handle, key, &mt4) == ESP_OK
+            || nvs_get_i32(_handle, key, &mt5) == ESP_OK
+            || nvs_get_u32(_handle, key, &mt6) == ESP_OK
+            || nvs_get_i64(_handle, key, &mt7) == ESP_OK
+            || nvs_get_u64(_handle, key, &mt8) == ESP_OK
+            || nvs_get_str(_handle, key, NULL, &len) == ESP_OK
+            || nvs_get_blob(_handle, key, NULL, &len) == ESP_OK;
+          // clang-format on
         };
 
         bool remove(const char* key) override {
