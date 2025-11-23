@@ -20,6 +20,10 @@ A simple, efficient configuration library for ESP32 (Arduino framework) with plu
   - [Optional: JSON Support](#optional-json-support)
 - [Quick Start](#quick-start)
 - [Migrating from v10 to v11](#migrating-from-v10-to-v11)
+- [Storage Backends](#storage-backends)
+  - [NVS Storage](#nvs-storage)
+  - [FileSystem Storage](#filesystem-storage)
+- [Configuration Migration](#configuration-migration)
 - [API Reference](#api-reference)
   - [Class: `Mycila::config::Config`](#class-mycilaconfigconfig)
     - [Constructor](#constructor)
@@ -39,13 +43,16 @@ A simple, efficient configuration library for ESP32 (Arduino framework) with plu
   - [Test Example](#test-example)
   - [JSON Export](#json-export)
   - [Native Type Support](#native-type-support)
+  - [FileSystem Storage Example](#filesystem-storage-example)
+  - [Configuration Migration Example](#configuration-migration-example)
+  - [V10 Compatibility](#v10-compatibility)
   - [Large Configuration](#large-configuration)
 - [Custom Storage Backend](#custom-storage-backend)
 - [License](#license)
 
 ## Features
 
-- 💾 **Persistent storage** using ESP32 NVS with pluggable storage backend
+- 💾 **Multiple storage backends**: NVS (default) and FileSystem (LittleFS/SPIFFS) with pluggable architecture
 - 🎯 **Default values** with efficient memory management (flash strings stored as pointers)
 - 🔢 **Native type support**: bool, int8/16/32/64, uint8/16/32/64, int, unsigned int, float, double (optional), and strings via `std::variant`
 - ⚡ **Generic typed API**: `get<T>()` and `set<T>()` with compile-time type safety
@@ -53,6 +60,7 @@ A simple, efficient configuration library for ESP32 (Arduino framework) with plu
 - 🔄 **Restore callback** fired after bulk configuration restore
 - ✅ **Validators** can be set globally, per-key, or during key configuration (receive variant values)
 - 💿 **Backup and restore** from key=value text format or `std::map<const char*, Value>`
+- 🔀 **Migration utilities** for moving configuration between storage backends
 - 📋 **Optional JSON export** with ArduinoJson integration (`toJson()`) - native types exported directly
 - 🔐 **Password masking** for keys ending with `_pwd` in JSON output
 - 🎚️ **Smart restore order**: non-`_enable` keys applied first, then `_enable` keys last (useful for feature toggles)
@@ -168,6 +176,156 @@ void setup() {
 
 **Note:** The deprecated wrapper will be removed in a future major version. Plan to migrate to the new typed API.
 
+## Storage Backends
+
+MycilaConfig supports multiple storage backends through a pluggable architecture.
+
+### NVS Storage (Recommended)
+
+The default storage backend uses ESP32's Non-Volatile Storage (NVS):
+
+```cpp
+#include <MycilaConfig.h>
+#include <MycilaConfigStorageNVS.h>
+
+Mycila::config::NVS storage;
+Mycila::config::Config config(storage);
+
+void setup() {
+  config.begin("MYAPP");  // NVS namespace
+}
+```
+
+**Advantages:**
+
+- ✅ Compact storage (no per-key overhead)
+- ✅ Designed for frequent writes with built-in wear leveling
+- ✅ Efficient for many keys (100+)
+- ✅ Type-aware storage (native int32, uint32, etc.)
+- ✅ Fast access with minimal overhead
+
+**Limitations:**
+
+- ⚠️ Key names limited to 15 characters (NVS constraint)
+
+### FileSystem Storage
+
+Store configuration in LittleFS or SPIFFS:
+
+```cpp
+#include <LittleFS.h>
+#include <MycilaConfig.h>
+#include <MycilaConfigStorageFS.h>
+
+Mycila::config::FileSystem storage;
+Mycila::config::Config config(storage);
+
+void setup() {
+  LittleFS.begin(true);
+  
+  config.begin("MYAPP", LittleFS, "/config");  // namespace, filesystem, root path
+}
+```
+
+**Advantages:**
+
+- ✅ Human-readable files (one file per key)
+- ✅ No key length restrictions
+- ✅ Easy to inspect/debug (files in `/config/MYAPP/`)
+- ✅ Compatible with LittleFS, SPIFFS, SD, etc.
+
+**Limitations:**
+
+- ⚠️ **Each key creates a separate file = 4KB block with LittleFS**
+- ⚠️ Not suitable for many keys (flash wear, storage waste)
+- ⚠️ All values stored as strings (parsed on load)
+- ⚠️ Slower than NVS for frequent updates
+
+**Recommended use case:** Small configurations (< 20 keys), debugging, or when human-readable files are required.
+
+**File structure:**
+
+```
+/config/MYAPP/
+  ├── wifi_ssid.txt       (contains: "MyNetwork")
+  ├── port.txt            (contains: "8080")
+  └── debug_enable.txt    (contains: "true")
+```
+
+**Storage overhead example:**
+
+```cpp
+config.configure("key1", "value1");  // Creates /config/MYAPP/key1.txt (4KB with LittleFS)
+config.configure("key2", 42);        // Creates /config/MYAPP/key2.txt (4KB with LittleFS)
+// Total: 8KB for 2 small values!
+```
+
+**See also:** [`examples/FS/FS.ino`](examples/FS/FS.ino) for a complete FileSystem storage example.
+
+## Configuration Migration
+
+The `Migration` class helps you move configuration between storage backends (e.g., from NVS to FileSystem or vice versa).
+
+### Basic Migration
+
+```cpp
+#include <LittleFS.h>
+#include <MycilaConfig.h>
+#include <MycilaConfigMigration.h>
+#include <MycilaConfigStorageFS.h>
+#include <MycilaConfigStorageNVS.h>
+
+Mycila::config::NVS nvsStorage;
+Mycila::config::FileSystem fsStorage;
+
+Mycila::config::Config nvsConfig(nvsStorage);
+Mycila::config::Config fsConfig(fsStorage);
+
+void setup() {
+  LittleFS.begin(true);
+
+  // Initialize both configs
+  nvsConfig.begin("MYAPP");
+  fsConfig.begin("MYAPP", LittleFS, "/config");
+
+  // Configure keys on both (must match!)
+  nvsConfig.configure("wifi_ssid", "");
+  nvsConfig.configure("port", 80);
+  
+  fsConfig.configure("wifi_ssid", "");
+  fsConfig.configure("port", 80);
+
+  // Migrate from NVS to FileSystem
+  Mycila::config::Migration migration;
+  if (migration.migrate(nvsConfig, fsConfig)) {
+    Serial.println("Migration successful!");
+    
+    // Optional: Clear source storage after successful migration
+    nvsConfig.clear();
+  } else {
+    Serial.println("Migration failed!");
+  }
+}
+```
+
+### Migration with Callback
+
+Monitor migration progress:
+
+```cpp
+Mycila::config::Migration migration;
+
+migration.listen([](const char* key) {
+  Serial.printf("Migrating key: %s\n", key);
+});
+
+if (migration.migrate(nvsConfig, fsConfig)) {
+  Serial.println("All keys migrated successfully");
+}
+```
+
+**See also:** [`examples/Migration/Migration.ino`](examples/Migration/Migration.ino) for a complete migration example.
+
 ## API Reference
 
 ### Class: `Mycila::config::Config`
@@ -186,31 +344,36 @@ void setup() {
 
 #### Setup and Storage
 
-- **`bool begin(const char* name = "CONFIG", bool preload = false)`**  
-  Initialize the configuration system with the specified NVS namespace. Returns true on success.
+- **`bool begin(const char* name = "CONFIG", bool preload = false)`** *(NVS storage)*  
+  **`bool begin(const char* name, FS& fs, const char* root = "/config", bool preload = false)`** *(FileSystem storage)*  
+  Initialize the configuration system. Returns true on success.
 
-  - `preload = false` (default): Values are loaded from NVS on-demand when first accessed (lazy loading)
-  - `preload = true`: All stored values are loaded into cache immediately during initialization
+  **Parameters:**
 
-  **Preloading benefits:**
+  - `name`: Namespace (NVS) or subdirectory name (FileSystem)
+  - `fs`: Filesystem object (LittleFS, SPIFFS, SD, etc.) - FileSystem storage only
+  - `root`: Root directory path - FileSystem storage only
+  - `preload`: Load all values into cache immediately
 
-  - Faster subsequent access (all values already in cache)
-  - Useful when you need to access many config values during startup
-  - Increases initial memory usage but reduces NVS read operations
+  **Preloading:**
 
-  **Example:**
+  - `preload = false` (default): Values loaded on-demand (lazy loading)
+  - `preload = true`: All stored values loaded into cache at initialization
+
+  **Examples:**
 
   ```cpp
-  // Lazy loading (default) - minimal startup time
+  // NVS storage
   config.begin("CONFIG");
+  config.begin("CONFIG", true);  // with preload
 
-  // Preload all values - faster access, higher initial memory
-  config.begin("CONFIG", true);
+  // FileSystem storage
+  config.begin("MYAPP", LittleFS, "/config");
+  config.begin("MYAPP", LittleFS, "/config", true);  // with preload
   ```
 
-- **`template <typename T = Value> bool configure(const char* key, T defaultValue, ValidatorCallback validator = nullptr)`**
-- **`bool configure(const char* key, ValidatorCallback validator = nullptr)`** (defaults to empty string)  
-  Register a configuration key with an optional default value and validator. Key must be ≤ 15 characters. Returns true if the key was successfully registered, false otherwise (e.g., key too long).
+- **`template <typename T> bool configure(const char* key, T defaultValue, ValidatorCallback validator = nullptr)`**  
+  Register a configuration key with a typed default value and optional validator. Returns true on success.
 
   **Supported types for `T`:**
 
@@ -222,8 +385,9 @@ void setup() {
   - `double` - Double precision (if `MYCILA_CONFIG_USE_DOUBLE` enabled)
   - `const char*` - C-strings (stored as pointer if in flash/ROM, zero copy)
   - `Mycila::config::Str` - String wrapper with heap/flash detection
+  - `Mycila::config::Value` - Variant type directly
 
-  **Example:**
+  **Examples:**
 
   ```cpp
   config.configure("enabled", false);
@@ -231,6 +395,12 @@ void setup() {
   config.configure("threshold", 25.5f);
   config.configure("name", "Device");
   config.configure("count", static_cast<uint32_t>(1000));
+
+  // With validator
+  config.configure("port", 80, [](const char* key, const Mycila::config::Value& value) {
+    int port = value.as<int>();
+    return port > 0 && port < 65536;
+  });
   ```
 
 - **`bool configured(const char* key) const`**  
@@ -632,13 +802,44 @@ See [`examples/Json/Json.ino`](examples/Json/Json.ino) for:
 
 ### Native Type Support
 
-See [`examples/Native/Native.ino`](examples/Native/Native.ino) for:
+[`examples/Native/Native.ino`](examples/Native/Native.ino) - All supported types, validators, batch operations
+
+**Demonstrates:**
 
 - Using all native types: bool, int8/16/32/64, uint8/16/32/64, int, unsigned int, float, double
 - Type-safe getters and setters with `get<T>()` and `set<T>()`
 - Validators with typed variant values
 - Batch operations with native types
+- Value class methods: `as<T>()`, `toString()`, `fromString()`
 - Heap usage tracking
+
+### FileSystem Storage Example
+
+[`examples/FS/FS.ino`](examples/FS/FS.ino) - Using LittleFS storage backend
+
+**Demonstrates:**
+
+- Setting up FileSystem storage with LittleFS
+- All native type operations with file-based storage
+- Storage overhead and file structure inspection
+- Type conversion and string parsing
+- Performance characteristics vs NVS
+
+### Configuration Migration Example
+
+[`examples/Migration/Migration.ino`](examples/Migration/Migration.ino) - Migrating between NVS and FileSystem storage
+
+**Demonstrates:**
+
+- Setting up both NVS and FileSystem storage
+- Configuring identical keys on both configs
+- Using Migration class to copy data between backends
+- Monitoring migration progress with callbacks
+- Verifying migration success
+
+### V10 Compatibility
+
+[`examples/CompatV10/CompatV10.ino`](examples/CompatV10/CompatV10.ino) - Using the deprecated v10 API wrapper
 
 ### Large Configuration
 
