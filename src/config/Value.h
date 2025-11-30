@@ -107,7 +107,7 @@ namespace Mycila {
               }
 
               // other types
-              if(str == nullptr || str[0] == '\0') {
+              if (str == nullptr || str[0] == '\0') {
                 return std::nullopt;
               }
 
