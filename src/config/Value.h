@@ -101,6 +101,16 @@ namespace Mycila {
             [&](auto&& variant) -> std::optional<Value> {
               using T = std::decay_t<decltype(variant)>;
 
+              /// string
+              if constexpr (std::is_same_v<T, Str>) {
+                return Str(str);
+              }
+
+              // other types
+              if(str == nullptr || str[0] == '\0') {
+                return std::nullopt;
+              }
+
               if constexpr (std::is_same_v<T, bool>) {
                 if (strcmp(str, MYCILA_CONFIG_VALUE_TRUE) == 0) {
                   return true;
@@ -167,10 +177,6 @@ namespace Mycila {
                 }
               }
 #endif
-
-              if constexpr (std::is_same_v<T, Str>) {
-                return Str(str);
-              }
 
               return std::nullopt;
             },
