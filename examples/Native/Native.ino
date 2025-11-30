@@ -290,6 +290,9 @@ void setup() {
   auto invalidInt = Mycila::config::Value::fromString("not_a_number", Mycila::config::Value(static_cast<int32_t>(999)));
   assert(!invalidInt.has_value());
 
+  auto emptyInt = Mycila::config::Value::fromString("", Mycila::config::Value(static_cast<int32_t>(999)));
+  assert(!emptyInt.has_value());
+
   auto invalidFloat = Mycila::config::Value::fromString("abc", Mycila::config::Value(1.23f));
   assert(!invalidFloat.has_value());
 
