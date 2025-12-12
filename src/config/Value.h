@@ -101,13 +101,17 @@ namespace Mycila {
             [&](auto&& variant) -> std::optional<Value> {
               using T = std::decay_t<decltype(variant)>;
 
+              if (str == nullptr) {
+                return std::nullopt;
+              }
+
               /// string
               if constexpr (std::is_same_v<T, Str>) {
                 return Str(str);
               }
 
-              // other types
-              if (str == nullptr || str[0] == '\0') {
+              // other types but empty value
+              if (str[0] == '\0') {
                 return std::nullopt;
               }
 
