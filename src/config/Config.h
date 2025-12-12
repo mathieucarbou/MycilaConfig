@@ -437,7 +437,7 @@ namespace Mycila {
 
           // check if the type valid
           if (value.index() != k->defaultValue.index()) {
-            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "set(%s): ERR_INVALID_TYPE", key);
+            ESP_LOGW(MYCILA_CONFIG_LOG_TAG, "set(%s): ERR_INVALID_TYPE (expected %d, got %d)", key, k->defaultValue.index(), value.index());
             return Status::ERR_INVALID_TYPE;
           }
 
