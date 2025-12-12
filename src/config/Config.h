@@ -152,8 +152,9 @@ namespace Mycila {
           return it != _keys.end() && (it->name == buffer || strcmp(it->name, buffer) == 0) ? &(*it) : nullptr;
         }
 
-        template <typename T = Value>
+        template <typename T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, Value>, int> = 0>
         const Result set(const char* key, T value, bool fireChangeCallback = true) { return _set(key, Value(value), fireChangeCallback); }
+        const Result set(const char* key, Value value, bool fireChangeCallback = true) { return _set(key, std::move(value), fireChangeCallback); }
 
         const Result setString(const char* key, const std::string& value, bool fireChangeCallback = true) { return setString(key, value.c_str(), fireChangeCallback); }
 
