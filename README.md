@@ -8,7 +8,6 @@
 
 [![Build](https://github.com/mathieucarbou/MycilaConfig/actions/workflows/ci.yml/badge.svg)](https://github.com/mathieucarbou/MycilaConfig/actions/workflows/ci.yml)
 [![GitHub latest commit](https://badgen.net/github/last-commit/mathieucarbou/MycilaConfig)](https://GitHub.com/mathieucarbou/MycilaConfig/commit/)
-[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/mathieucarbou/MycilaConfig)
 
 A simple, efficient configuration library for ESP32 (Arduino framework) with pluggable storage backends (NVS included). Supports native types (bool, integers, floats, strings) with type safety via `std::variant`. Provides defaults, caching, generic typed API, validators, change/restore callbacks, backup/restore, and optional JSON export with password masking.
 
