@@ -108,7 +108,7 @@ namespace Mycila {
 
         void backup(Print& out, bool includeDefaults = true) { _delegate->backup(out, includeDefaults); }
         bool restore(const char* data) { return _delegate->restore(data); }
-        bool restore(const std::map<const char*, std::string>& settings) { return _delegate->restore(std::move(settings)); }
+        bool restore(std::map<const char*, std::string> settings) { return _delegate->restore(std::move(settings)); }
 
         size_t heapUsage() const { return _delegate->heapUsage(); }
 
