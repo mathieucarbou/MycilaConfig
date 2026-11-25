@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  platformio:
+  platformio-arduino-3:
     name: "pio:${{ matrix.board }}"
     runs-on: ubuntu-latest
     strategy:
@@ -74,6 +74,70 @@ jobs:
         run: PLATFORMIO_SRC_DIR=examples/Native PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
       - name: Test
         run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-3
+
+
+  platformio-arduino-4:
+    name: "pio:${{ matrix.board }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [
+            "denky_d4",
+            "esp32-c3-devkitc-02",
+            "esp32-c6-devkitc-1",
+            "esp32-gateway",
+            "esp32-poe-iso",
+            "esp32-poe",
+            "esp32-s2-saola-1",
+            "esp32-s3-devkitc-1",
+            "esp32s3box",
+            # "esp32-solo1",
+            "esp32dev",
+            "esp32s3box",
+            "lolin_s2_mini",
+            "tinypico",
+            "wemos_d1_uno32",
+            "wipy3",
+            "wt32-eth01",
+          ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v5
+        with:
+          key: ${{ runner.os }}-pio
+          path: |
+            ~/.cache/pip
+            ~/.platformio
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+          pip install --upgrade cryptography
+          pip install --upgrade intelhex
+
+      - name: Big
+        run: PLATFORMIO_SRC_DIR=examples/Big PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-4
+      - name: CompatV10
+        run: PLATFORMIO_SRC_DIR=examples/CompatV10 PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-4
+      - name: FS
+        run: PLATFORMIO_SRC_DIR=examples/FS PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-4
+      - name: Migration
+        run: PLATFORMIO_SRC_DIR=examples/Migration PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-4
+      - name: Native
+        run: PLATFORMIO_SRC_DIR=examples/Native PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-4
+      - name: Test
+        run: PLATFORMIO_SRC_DIR=examples/Test PIO_BOARD=${{ matrix.board }} pio run -e ci-arduino-4
 
   specials:
     name: "pio:${{ matrix.board }} (specials)"
